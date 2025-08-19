@@ -310,10 +310,12 @@
         body.addEventListener('mouseleave', handlePressEnd);
         body.addEventListener('touchstart', handlePressStart);
         body.addEventListener('touchend', handlePressEnd);
+        // PERBAIKAN: Tambahkan event listener untuk touchmove
+        body.addEventListener('touchmove', handlePressEnd);
 
         // Inisialisasi Aplikasi
         resetAvailableColors();
-        // DIPERBARUI: Hapus Magenta (indeks 9) dari siklus acak pertama
+        // Hapus Magenta (indeks 9) dari siklus acak pertama
         const initialMagentaIndexInAvailable = availableColors.indexOf(9);
         if (initialMagentaIndexInAvailable > -1) {
             availableColors.splice(initialMagentaIndexInAvailable, 1);
