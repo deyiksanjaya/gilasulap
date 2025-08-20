@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rubik's Trainer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Poppins:wght@700&display=swap" rel="stylesheet">
+    <style>
+        /* Using a cleaner, more modern font stack */
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* Using a bolder, more impactful font for the main heading */
+        h1 {
+            font-family: 'Poppins', sans-serif;
+        }
+
+        /* The cube grid itself - refined for a cleaner look */
+        .cube-face {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            width: 100%; /* Make it responsive within its container */
+            max-width: 300px; /* Set a max-width */
+            aspect-ratio: 1 / 1; /* Maintain a square shape */
+            border: 4px solid #1e293b; /* Darker slate border */
+            gap: 5px; /* Slightly increased gap */
+            background-color: #1e293b; /* Darker slate background */
+            border-radius: 1rem; /* 16px */
+            padding: 0.5rem; /* 8px */
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            cursor: pointer;
+            user-select: none;
+            transition: transform 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94), box-shadow 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+        .cube-face:hover {
+            transform: scale(1.03) translateY(-2px);
+            box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+        }
+        .cube-face:active {
+            transform: scale(0.99);
+        }
+        
+        /* Individual stickers on the cube face */
+        .sticker {
+            border-radius: 0.5rem; /* 8px */
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        /* Mobile Menu Styles */
+        .mobile-menu {
+            transform: translateX(100%);
+            transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+        .mobile-menu.open {
+            transform: translateX(0);
+        }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 flex flex-col min-h-screen">
+
+    <!-- Header: Refined with a darker slate and subtle border -->
+    <header class="bg-slate-900 shadow-md w-full py-4 px-6 flex items-center justify-between z-20 border-b border-slate-700">
+        <div class="flex items-center gap-3">
+             <img src="https://cdn.prod.website-files.com/65849828bf90a121b81dc3a5/65c26184c71d3dd48e4cfaa9_Rubiks-logo.png" alt="Rubik's Cube Logo" class="h-8 sm:h-10" onerror="this.style.display='none'">
+             <span class="text-white font-semibold text-xl hidden sm:block">Trainer</span>
+        </div>
+        
+        <button id="burger-btn" class="text-slate-300 focus:outline-none p-2 rounded-lg hover:bg-slate-700 hover:text-white focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 focus:ring-white transition-all">
+            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path>
+            </svg>
+        </button>
+    </header>
+
+    <!-- Mobile Menu (positioned on the right) -->
+    <nav id="mobile-menu" class="mobile-menu fixed top-0 right-0 h-full w-64 bg-slate-900 text-slate-200 p-5 z-50 shadow-2xl">
+        <div class="flex justify-between items-center mb-10">
+            <h2 class="text-xl font-bold text-white">Menu</h2>
+            <button id="close-btn" class="text-slate-300 focus:outline-none p-2 rounded-lg hover:bg-slate-700 hover:text-white focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 focus:ring-white transition-all">
+                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+        <ul class="space-y-2">
+            <li><a href="#" class="block py-2 px-3 rounded-md hover:bg-slate-700 hover:text-white transition-colors">Home</a></li>
+            <li><a href="#" class="block py-2 px-3 rounded-md hover:bg-slate-700 hover:text-white transition-colors">Patterns</a></li>
+            <li><a href="#" class="block py-2 px-3 rounded-md hover:bg-slate-700 hover:text-white transition-colors">Tutorials</a></li>
+            <li><a href="#" class="block py-2 px-3 rounded-md hover:bg-slate-700 hover:text-white transition-colors">About</a></li>
+        </ul>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="flex-grow flex items-center justify-center p-4 sm:p-6">
+        <!-- Card container for a cleaner layout -->
+        <div class="bg-white p-6 sm:p-10 rounded-2xl shadow-lg w-full max-w-lg text-center">
+            <h1 class="text-4xl sm:text-5xl font-bold text-slate-900 mb-3 tracking-tight">Rubik's Trainer</h1>
+            <p class="text-base sm:text-lg text-slate-500 max-w-sm mx-auto leading-relaxed">A reverse-solving challenge. Recreate the random pattern on your own cube.</p>
+            
+            <div class="mt-8 flex justify-center">
+                <div id="rubiks-face" class="cube-face">
+                    <!-- Stickers will be generated here by JS -->
+                </div>
+            </div>
+            
+            <!-- Instruction Text Added Here -->
+            <p class="mt-6 text-sm text-slate-500">
+                <strong>Click</strong> the cube to shuffle.
+            </p>
+        </div>
+    </main>
+
+    <script>
+        // 1. Define colors
+        const colors = {
+            white: '#f9fafb', yellow: '#facc15', red: '#dc2626',
+            orange: '#f97316', green: '#22c55e', blue: '#3b82f6'
+        };
+        const colorArray = Object.values(colors);
+
+        // 2. Define the BASE pattern and a function to rotate it
+        const basePatternUp = [
+            colors.blue,   colors.white,  colors.green,
+            colors.green,  colors.white,  colors.orange,
+            colors.red,    colors.yellow, colors.blue
+        ];
+
+        function rotate(pattern) { // Rotates 90 degrees clockwise
+            const p = pattern;
+            return [p[6], p[3], p[0], p[7], p[4], p[1], p[8], p[5], p[2]];
+        }
+        
+        // 3. Create all force patterns programmatically
+        const forcePatterns = {
+            up: basePatternUp,
+            right: rotate(basePatternUp),
+            down: rotate(rotate(basePatternUp)), // Rotate 180
+            left: rotate(rotate(rotate(basePatternUp))) // Rotate 270
+        };
+
+        // 4. Initialize variables
+        const cubeFace = document.getElementById('rubiks-face');
+        let stickers = [];
+        let clickTimeout = null;
+        let clickCounter = 0;
+        let currentOrientation = null;
+        let startX, startY;
+        let isDragging = false;
+
+        // 5. Cube functions
+        function getRandomColor() {
+            return colorArray[Math.floor(Math.random() * colorArray.length)];
+        }
+        function randomizeAllStickers() {
+            stickers.forEach(sticker => {
+                sticker.style.backgroundColor = getRandomColor();
+            });
+        }
+        function setFinalPattern() {
+            if (currentOrientation !== null) {
+                const pattern = forcePatterns[currentOrientation];
+                stickers.forEach((sticker, index) => {
+                    sticker.style.backgroundColor = pattern[index];
+                });
+            } else {
+                // As a fallback if no swipe has happened, just randomize.
+                randomizeAllStickers();
+            }
+        }
+
+        // 6. Generate stickers
+        for (let i = 0; i < 9; i++) {
+            const sticker = document.createElement('div');
+            sticker.classList.add('sticker');
+            cubeFace.appendChild(sticker);
+            stickers.push(sticker);
+        }
+
+        // 7. Event Handlers for Swipe and Click
+        function handleStart(x, y) {
+            startX = x;
+            startY = y;
+            isDragging = false;
+        }
+
+        function handleMove(x, y) {
+            // A small threshold to prevent accidental drags on click
+            if (Math.abs(x - startX) > 10 || Math.abs(y - startY) > 10) {
+                isDragging = true;
+            }
+        }
+
+        // --- CORRECTED LOGIC ---
+        function handleEnd(x, y) {
+            if (isDragging) {
+                const deltaX = x - startX;
+                const deltaY = y - startY;
+                // Determine swipe direction
+                if (Math.abs(deltaX) > Math.abs(deltaY)) {
+                    currentOrientation = deltaX > 0 ? 'right' : 'left';
+                } else {
+                    currentOrientation = deltaY > 0 ? 'down' : 'up';
+                }
+                 // Reset click counter after a drag to avoid misfires
+                clickCounter = 0;
+            } else {
+                // This is a click, not a drag.
+                
+                // 1. Shuffle immediately on every click.
+                randomizeAllStickers();
+                
+                // 2. Increment the click counter.
+                clickCounter++;
+                
+                // 3. Clear any previous timer.
+                clearTimeout(clickTimeout);
+
+                // 4. Set a new timer to check for multiple clicks after a pause.
+                clickTimeout = setTimeout(() => {
+                    // 5. When the timer finishes, check if there was a burst of clicks.
+                    if (clickCounter > 1) {
+                        // If there was more than one click, show the force pattern.
+                        setFinalPattern();
+                    }
+                    // If it was just 1 click, do nothing, as the cube is already shuffled.
+                    
+                    // 6. Reset the counter for the next interaction.
+                    clickCounter = 0;
+                }, 50); // 50ms window to detect a burst
+            }
+        }
+
+        // 8. Attach Event Listeners
+        cubeFace.addEventListener('mousedown', (e) => handleStart(e.clientX, e.clientY));
+        cubeFace.addEventListener('mousemove', (e) => {
+            if (e.buttons === 1) handleMove(e.clientX, e.clientY);
+        });
+        cubeFace.addEventListener('mouseup', (e) => handleEnd(e.clientX, e.clientY));
+        
+        cubeFace.addEventListener('touchstart', (e) => handleStart(e.touches[0].clientX, e.touches[0].clientY), { passive: true });
+        cubeFace.addEventListener('touchmove', (e) => handleMove(e.touches[0].clientX, e.touches[0].clientY), { passive: true });
+        cubeFace.addEventListener('touchend', (e) => handleEnd(e.changedTouches[0].clientX, e.changedTouches[0].clientY));
+
+        // 9. Initial state
+        randomizeAllStickers();
+
+        // 10. Burger Menu Logic
+        const burgerBtn = document.getElementById('burger-btn');
+        const closeBtn = document.getElementById('close-btn');
+        const mobileMenu = document.getElementById('mobile-menu');
+
+        burgerBtn.addEventListener('click', () => mobileMenu.classList.add('open'));
+        closeBtn.addEventListener('click', () => mobileMenu.classList.remove('open'));
+    </script>
+
+</body>
+</html>
