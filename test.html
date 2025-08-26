@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>ESP Test Online</title>
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="ESP">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/95/95240.png">
+    <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/95/95240.png">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
+            -ms-user-select: none;
+            overflow: hidden;
+            margin: 0;
+            background-color: #000; /* Solid black background */
+        }
+        #canvas-wrapper {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        #top-canvas {
+            cursor: crosshair;
+        }
+        .cinzel-font {
+            font-family: 'Cinzel', serif;
+        }
+        .premium-button {
+            background: linear-gradient(45deg, #3a3a3a, #1a1a1a);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+            transition: all 0.3s ease;
+        }
+        .premium-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(220, 180, 100, 0.2);
+            border-color: rgba(220, 180, 100, 0.5);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="canvas-wrapper">
+        <canvas id="bottom-canvas"></canvas>
+        <canvas id="top-canvas"></canvas>
+    </div>
+
+    <div id="failModal" class="fixed inset-0 bg-black bg-opacity-90 flex-col items-center justify-center hidden z-50 p-4 text-center">
+        <p class="cinzel-font text-2xl text-white mb-8">You need to really channel your thought.<br>Seek ESP masters for help</p>
+        <button id="practiceButton" class="premium-button text-white font-semibold px-6 py-3 rounded-lg">Take Practice Session</button>
+    </div>
+
+    <script>
+        // --- Canvas and Context Setup ---
+        const bottomCanvas = document.getElementById('bottom-canvas');
+        const bottomCtx = bottomCanvas.getContext('2d');
+        const topCanvas = document.getElementById('top-canvas');
+        const topCtx = topCanvas.getContext('2d');
+        const failModal = document.getElementById('failModal');
+        const practiceButton = document.getElementById('practiceButton');
+
+        // --- State Variables ---
+        let isPointerDown = false; // Tracks if mouse/finger is down
+        let hasDragged = false;   // Tracks if movement has occurred
+        let startPos = { x: 0, y: 0 }; // Stores starting position of interaction
+        const DRAG_THRESHOLD = 5;     // Min pixels to move to be considered a drag
+
+        let isRevealed = false; 
+        let protectedSymbolValue = null;
+        const ERASER_SIZE = 35;
+        const STORAGE_KEY = 'symbolicEchoProtected';
+        
+        // --- Triple Tap Reset Logic ---
+        let tapHistory = [];
+        const TRIPLE_TAP_TIME_THRESHOLD = 700; // Time window for taps in milliseconds
+        const TRIPLE_TAP_AREA_THRESHOLD = 50;  // Max distance between taps in pixels
+
+        let spectatorName = "Guest"; // Default name
+        let isPerformanceMode = false; // Determines if the freeze logic is active
+        let modalIsQueued = false; // Flag to prevent multiple modal triggers
+
+        // --- Symbol Data ---
+        const symbols = [
+            { name: 'Circle', value: 1, draw: (c, x, y, s) => { c.arc(x, y, s * 0.35, 0, Math.PI * 2); } },
+            { name: 'Cross', value: 2, draw: (c, x, y, s) => { c.moveTo(x, y - s * 0.35); c.lineTo(x, y + s * 0.35); c.moveTo(x - s * 0.35, y); c.lineTo(x + s * 0.35, y); } },
+            { name: 'Wavy Lines', value: 3, draw: (c, x, y, s) => {
+                for (let i = -1; i <= 1; i++) {
+                    c.moveTo(x - s * 0.3, y + s * 0.2 * i);
+                    c.quadraticCurveTo(x - s * 0.15, y + s * 0.2 * i - s * 0.2, x, y + s * 0.2 * i);
+                    c.quadraticCurveTo(x + s * 0.15, y + s * 0.2 * i + s * 0.2, x + s * 0.3, y + s * 0.2 * i);
+                }
+            } },
+            { name: 'Square', value: 4, draw: (c, x, y, s) => { c.rect(x - s * 0.35, y - s * 0.35, s * 0.7, s * 0.7); } },
+            { name: 'Star', value: 5, draw: (c, x, y, s) => {
+                c.moveTo(x, y - s * 0.35);
+                for (let i = 1; i < 5; i++) {
+                    c.lineTo(x + Math.sin(i * 0.8 * Math.PI) * s * 0.35, y - Math.cos(i * 0.8 * Math.PI) * s * 0.35);
+                }
+                c.closePath();
+            } }
+        ];
+
+        let symbolStates = [];
+
+        function customDecode(encodedText) {
+            try {
+                return atob(encodedText);
+            } catch (e) {
+                console.error("Failed to decode Base64 string:", e);
+                return "Guest";
+            }
+        }
+        
+        function wrapText(context, text, x, y, maxWidth, lineHeight) {
+            let words = text.split(' ');
+            let line = '';
+            let currentY = y;
+
+            for (let n = 0; n < words.length; n++) {
+                let testLine = line + words[n] + ' ';
+                let metrics = context.measureText(testLine);
+                let testWidth = metrics.width;
+                if (testWidth > maxWidth && n > 0) {
+                    context.fillText(line, x, currentY);
+                    line = words[n] + ' ';
+                    currentY += lineHeight;
+                } else {
+                    line = testLine;
+                }
+            }
+            context.fillText(line.trim(), x, currentY);
+            return currentY; 
+        }
+
+        function setupCanvases() {
+            const dpr = window.devicePixelRatio || 1;
+            const rect = topCanvas.getBoundingClientRect();
+            
+            topCanvas.width = rect.width * dpr;
+            topCanvas.height = rect.height * dpr;
+            topCtx.scale(dpr, dpr);
+
+            bottomCanvas.width = rect.width * dpr;
+            bottomCanvas.height = rect.height * dpr;
+            bottomCtx.scale(dpr, dpr);
+            
+            loadState();
+        }
+
+        function drawOverlayGreeting() {
+            const clientWidth = topCanvas.clientWidth;
+            const centerX = clientWidth / 2;
+            const topTextMargin = 80;
+            const lineSpacing = 50; 
+            const textPadding = 20;
+            const maxWidth = clientWidth - (textPadding * 2);
+
+            topCtx.fillStyle = '#e0e0e0';
+            topCtx.textAlign = 'center';
+            
+            topCtx.font = '40px Cinzel';
+            topCtx.fillText(`Hi ${spectatorName},`, centerX, topTextMargin);
+            
+            topCtx.font = '20px Cinzel';
+            const instructionText = 'Please think of one of the ESP symbols below.';
+            wrapText(topCtx, instructionText, centerX, topTextMargin + lineSpacing, maxWidth, 28);
+        }
+
+        function drawContentOnBottomCanvas() {
+            const clientWidth = bottomCanvas.clientWidth;
+            const clientHeight = bottomCanvas.clientHeight;
+            
+            if (clientWidth === 0 || clientHeight === 0) {
+                requestAnimationFrame(drawContentOnBottomCanvas);
+                return;
+            }
+
+            const centerX = clientWidth / 2;
+            const centerY = clientHeight / 2;
+            const outerRadius = Math.sqrt(centerX * centerX + centerY * centerY);
+
+            const gradient = bottomCtx.createRadialGradient(centerX, centerY, 0, centerX, centerY, outerRadius);
+            gradient.addColorStop(0, '#1a1a1a'); 
+            gradient.addColorStop(1, '#000000');
+
+            bottomCtx.fillStyle = gradient;
+            bottomCtx.fillRect(0, 0, clientWidth, clientHeight);
+            
+            bottomCtx.strokeStyle = '#e0e0e0';
+            bottomCtx.lineWidth = Math.min(clientWidth, clientHeight) / 100;
+            bottomCtx.lineCap = 'round';
+            
+            const symbolAreaYStart = 200; 
+            const symbolAreaHeight = clientHeight - symbolAreaYStart - 20;
+            const symbolAreaWidth = clientWidth;
+            
+            const gridSize = 3;
+            const minDim = Math.min(symbolAreaWidth, symbolAreaHeight);
+            const cellSize = minDim / gridSize;
+            const symbolSize = cellSize * 0.8;
+            
+            const offsetX = (clientWidth - minDim) / 2;
+            const offsetY = symbolAreaYStart + (symbolAreaHeight - minDim) / 2;
+
+            const positions = [
+                { row: 0, col: 0 }, { row: 0, col: 2 },
+                { row: 2, col: 0 }, { row: 2, col: 2 },
+                { row: 1, col: 1 }
+            ];
+
+            symbolStates.forEach((state, i) => {
+                const symbol = symbols[i];
+                const x = offsetX + (positions[i].col + 0.5) * cellSize;
+                const y = offsetY + (positions[i].row + 0.5) * cellSize;
+                
+                state.bounds = {
+                    x: x - cellSize / 2, y: y - cellSize / 2,
+                    width: cellSize, height: cellSize
+                };
+                
+                bottomCtx.beginPath();
+                symbol.draw(bottomCtx, x, y, symbolSize);
+                bottomCtx.stroke();
+            });
+        }
+
+        function resetBoard() {
+            modalIsQueued = false; 
+            symbolStates = symbols.map(s => ({ 
+                value: s.value, 
+                touched: false,
+                bounds: {} 
+            }));
+            
+            drawContentOnBottomCanvas();
+            
+            topCtx.clearRect(0, 0, topCanvas.width, topCanvas.height);
+            drawOverlayGreeting();
+        }
+
+        function loadState() {
+            const savedValue = localStorage.getItem(STORAGE_KEY);
+            if (savedValue) {
+                const savedState = JSON.parse(savedValue);
+                isRevealed = true;
+                protectedSymbolValue = savedState.symbol;
+                spectatorName = savedState.name;
+            } else {
+                isRevealed = false;
+                protectedSymbolValue = null;
+                if (!isPerformanceMode) {
+                    spectatorName = "Guest";
+                }
+            }
+            resetBoard();
+        }
+
+        function coverWithStroke(x, y) {
+            if (isRevealed) {
+                const protectedSymbol = symbolStates.find(s => s.value === protectedSymbolValue);
+                if (protectedSymbol) {
+                    const b = protectedSymbol.bounds;
+                    const closestX = Math.max(b.x, Math.min(x, b.x + b.width));
+                    const closestY = Math.max(b.y, Math.min(y, b.y + b.height));
+                    const distance = Math.hypot(x - closestX, y - closestY);
+                    if (distance < ERASER_SIZE) {
+                        return;
+                    }
+                }
+            }
+            
+            const centerX = topCanvas.clientWidth / 2;
+            const centerY = topCanvas.clientHeight / 2;
+            const outerRadius = Math.sqrt(centerX * centerX + centerY * centerY);
+            const gradient = topCtx.createRadialGradient(centerX, centerY, 0, centerX, centerY, outerRadius);
+            gradient.addColorStop(0, '#1a1a1a');
+            gradient.addColorStop(1, '#000000');
+            
+            topCtx.fillStyle = gradient;
+            topCtx.beginPath();
+            topCtx.arc(x, y, ERASER_SIZE, 0, Math.PI * 2, false);
+            topCtx.fill();
+
+            drawOverlayGreeting();
+        }
+
+        function checkTouch(x, y) {
+            if (isRevealed) return;
+
+            symbolStates.forEach(state => {
+                const b = state.bounds;
+                if (!state.touched && x > b.x && x < b.x + b.width && y > b.y && y < b.y + b.height) {
+                    state.touched = true;
+                }
+            });
+
+            const touchedSymbols = symbolStates.filter(s => s.touched);
+
+            if (isPerformanceMode || protectedSymbolValue !== null) {
+                if (touchedSymbols.length === 4) {
+                    const untouchedSymbol = symbolStates.find(s => !s.touched);
+                    if (untouchedSymbol) {
+                        protectedSymbolValue = untouchedSymbol.value;
+                        isRevealed = true;
+                        if (isPerformanceMode) {
+                            const stateToSave = {
+                                symbol: protectedSymbolValue,
+                                name: spectatorName
+                            };
+                            localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
+                        }
+                    }
+                }
+            } else {
+                if (touchedSymbols.length === 5 && !modalIsQueued) {
+                    modalIsQueued = true;
+                    setTimeout(() => {
+                        failModal.classList.remove('hidden');
+                        failModal.classList.add('flex');
+                    }, 2000);
+                }
+            }
+        }
+
+        function handleSecretReset(tapPos) {
+            const now = new Date().getTime();
+            tapHistory.push({ time: now, pos: tapPos });
+            tapHistory = tapHistory.filter(tap => now - tap.time < TRIPLE_TAP_TIME_THRESHOLD);
+
+            if (tapHistory.length < 3) return;
+
+            const firstTapPos = tapHistory[0].pos;
+            const allTapsInSameArea = tapHistory.every(tap => {
+                const distance = Math.hypot(tap.pos.x - firstTapPos.x, tap.pos.y - firstTapPos.y);
+                return distance < TRIPLE_TAP_AREA_THRESHOLD;
+            });
+
+            if (allTapsInSameArea) {
+                localStorage.removeItem(STORAGE_KEY);
+                tapHistory = []; 
+                
+                document.body.style.backgroundColor = 'white';
+                setTimeout(() => {
+                    document.body.style.backgroundColor = 'black';
+                    spectatorName = "Guest";
+                    isRevealed = false;
+                    protectedSymbolValue = null;
+                    resetBoard();
+                }, 100);
+            }
+        }
+
+        function handleStart(e) {
+            isPointerDown = true;
+            hasDragged = false;
+            startPos = getPos(e);
+            const currentPos = getPos(e);
+            checkTouch(currentPos.x, currentPos.y);
+            coverWithStroke(currentPos.x, currentPos.y);
+        }
+
+        function handleMove(e) {
+            if (!isPointerDown) return;
+            e.preventDefault();
+            const currentPos = getPos(e);
+            const distance = Math.hypot(currentPos.x - startPos.x, currentPos.y - startPos.y);
+            if (distance > DRAG_THRESHOLD) hasDragged = true;
+            checkTouch(currentPos.x, currentPos.y);
+            coverWithStroke(currentPos.x, currentPos.y);
+        }
+
+        function handleEnd() {
+            if (!isPointerDown) return;
+            if (!hasDragged) handleSecretReset(startPos);
+            isPointerDown = false;
+        }
+
+        function getPos(e) {
+            const rect = topCanvas.getBoundingClientRect();
+            const clientX = e.clientX || e.touches[0].clientX;
+            const clientY = e.clientY || e.touches[0].clientY;
+            return { x: clientX - rect.left, y: clientY - rect.top };
+        }
+
+        function initialize() {
+            const encodedName = window.location.hash.substring(1); 
+
+            if (encodedName) {
+                isPerformanceMode = true;
+                let decoded = customDecode(decodeURIComponent(encodedName));
+                spectatorName = decoded.charAt(0).toUpperCase() + decoded.slice(1);
+                
+                // REVISED LINE: Using location.replace() as requested
+                window.location.replace(window.location.pathname);
+
+            } else {
+                isPerformanceMode = false;
+            }
+
+            setupCanvases();
+        }
+
+        window.addEventListener('mousedown', handleStart);
+        window.addEventListener('mousemove', handleMove);
+        window.addEventListener('mouseup', handleEnd);
+        window.addEventListener('mouseleave', handleEnd);
+        window.addEventListener('touchstart', handleStart, { passive: false });
+        window.addEventListener('touchmove', handleMove, { passive: false });
+        window.addEventListener('touchend', handleEnd);
+        window.addEventListener('touchcancel', handleEnd);
+        window.addEventListener('resize', setupCanvases);
+        practiceButton.addEventListener('click', () => {
+            window.location.replace('practice.html');
+        });
+
+        // This block was removed to stop interference with the back button.
+        // window.addEventListener('popstate', function(event) {
+        //     history.pushState(null, '', window.location.pathname);
+        // });
+
+        window.onload = async function() {
+            try {
+                await document.fonts.load('40px Cinzel');
+                await document.fonts.load('20px Cinzel');
+            } catch (err) {
+                console.error('Font could not be loaded, using fallback:', err);
+            } finally {
+                initialize();
+            }
+        }
+    </script>
+</body>
+</html>
