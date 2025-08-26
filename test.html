@@ -26,7 +26,7 @@
             -ms-user-select: none;
             overflow: hidden;
             margin: 0;
-            background-color: #000; /* Solid black background */
+            background-color: #000;
         }
         #canvas-wrapper {
             position: relative;
@@ -81,10 +81,10 @@
         const practiceButton = document.getElementById('practiceButton');
 
         // --- State Variables ---
-        let isPointerDown = false; // Tracks if mouse/finger is down
-        let hasDragged = false;   // Tracks if movement has occurred
-        let startPos = { x: 0, y: 0 }; // Stores starting position of interaction
-        const DRAG_THRESHOLD = 5;     // Min pixels to move to be considered a drag
+        let isPointerDown = false;
+        let hasDragged = false;
+        let startPos = { x: 0, y: 0 };
+        const DRAG_THRESHOLD = 5;
 
         let isRevealed = false; 
         let protectedSymbolValue = null;
@@ -93,12 +93,12 @@
         
         // --- Triple Tap Reset Logic ---
         let tapHistory = [];
-        const TRIPLE_TAP_TIME_THRESHOLD = 700; // Time window for taps in milliseconds
-        const TRIPLE_TAP_AREA_THRESHOLD = 50;  // Max distance between taps in pixels
+        const TRIPLE_TAP_TIME_THRESHOLD = 700;
+        const TRIPLE_TAP_AREA_THRESHOLD = 50;
 
-        let spectatorName = "Guest"; // Default name
-        let isPerformanceMode = false; // Determines if the freeze logic is active
-        let modalIsQueued = false; // Flag to prevent multiple modal triggers
+        let spectatorName = "Guest";
+        let isPerformanceMode = false;
+        let modalIsQueued = false;
 
         // --- Symbol Data ---
         const symbols = [
@@ -245,6 +245,8 @@
             });
         }
 
+        // *** REVISED FUNCTION ***
+        // This function now only resets state and draws the base layers.
         function resetBoard() {
             modalIsQueued = false; 
             symbolStates = symbols.map(s => ({ 
@@ -254,18 +256,47 @@
             }));
             
             drawContentOnBottomCanvas();
-            
             topCtx.clearRect(0, 0, topCanvas.width, topCanvas.height);
-            drawOverlayGreeting();
         }
 
+        // This function now also calls the greeting text.
+        function showRevealedState() {
+            const protectedSymbol = symbolStates.find(s => s.value === protectedSymbolValue);
+            if (!protectedSymbol || !protectedSymbol.bounds.width) {
+                requestAnimationFrame(showRevealedState);
+                return;
+            }
+            
+            const clientWidth = topCanvas.clientWidth;
+            const clientHeight = topCanvas.clientHeight;
+            const centerX = clientWidth / 2;
+            const centerY = clientHeight / 2;
+            const outerRadius = Math.sqrt(centerX * centerX + centerY * centerY);
+            const gradient = topCtx.createRadialGradient(centerX, centerY, 0, centerX, centerY, outerRadius);
+            gradient.addColorStop(0, '#1a1a1a');
+            gradient.addColorStop(1, '#000000');
+            
+            topCtx.fillStyle = gradient;
+            topCtx.fillRect(0, 0, clientWidth, clientHeight);
+
+            const b = protectedSymbol.bounds;
+            topCtx.clearRect(b.x, b.y, b.width, b.height);
+
+            drawOverlayGreeting(); // Draw greeting on top of the revealed state.
+        }
+
+        // *** REVISED FUNCTION WITH ANTI-GLITCH LOGIC ***
         function loadState() {
             const savedValue = localStorage.getItem(STORAGE_KEY);
+            
             if (savedValue) {
                 const savedState = JSON.parse(savedValue);
                 isRevealed = true;
                 protectedSymbolValue = savedState.symbol;
-                spectatorName = savedState.name;
+                if(savedState.name) {
+                    spectatorName = savedState.name;
+                }
+                isPerformanceMode = true; 
             } else {
                 isRevealed = false;
                 protectedSymbolValue = null;
@@ -273,13 +304,23 @@
                     spectatorName = "Guest";
                 }
             }
-            resetBoard();
+            
+            resetBoard(); // Prepare the board state and bottom canvas.
+
+            // Now, decide what to draw on the top canvas.
+            if (isRevealed) {
+                // If revealed, draw the revealed state immediately.
+                requestAnimationFrame(showRevealedState);
+            } else {
+                // If not revealed, draw the initial greeting.
+                drawOverlayGreeting();
+            }
         }
 
         function coverWithStroke(x, y) {
             if (isRevealed) {
                 const protectedSymbol = symbolStates.find(s => s.value === protectedSymbolValue);
-                if (protectedSymbol) {
+                if (protectedSymbol && protectedSymbol.bounds) {
                     const b = protectedSymbol.bounds;
                     const closestX = Math.max(b.x, Math.min(x, b.x + b.width));
                     const closestY = Math.max(b.y, Math.min(y, b.y + b.height));
@@ -343,6 +384,8 @@
             }
         }
 
+        // *** REVISED FUNCTION ***
+        // Must explicitly draw the greeting after a manual reset.
         function handleSecretReset(tapPos) {
             const now = new Date().getTime();
             tapHistory.push({ time: now, pos: tapPos });
@@ -366,7 +409,9 @@
                     spectatorName = "Guest";
                     isRevealed = false;
                     protectedSymbolValue = null;
+                    isPerformanceMode = false;
                     resetBoard();
+                    drawOverlayGreeting(); // Explicitly draw greeting here.
                 }, 100);
             }
         }
@@ -404,20 +449,37 @@
         }
 
         function initialize() {
-            const encodedName = window.location.hash.substring(1); 
+            const SESSION_NAME_KEY = 'espSpectatorName';
+            const encodedName = window.location.hash.substring(1);
 
             if (encodedName) {
                 isPerformanceMode = true;
                 let decoded = customDecode(decodeURIComponent(encodedName));
                 spectatorName = decoded.charAt(0).toUpperCase() + decoded.slice(1);
                 
-                // REVISED LINE: Using location.replace() as requested
+                sessionStorage.setItem(SESSION_NAME_KEY, spectatorName);
+                
                 window.location.replace(window.location.pathname);
-
-            } else {
-                isPerformanceMode = false;
+                
+                return;
             }
 
+            const tempSpectatorName = sessionStorage.getItem(SESSION_NAME_KEY);
+            if (tempSpectatorName) {
+                isPerformanceMode = true;
+                spectatorName = tempSpectatorName;
+                
+                sessionStorage.removeItem(SESSION_NAME_KEY);
+            } else {
+                // Check localStorage as a fallback for performance mode status
+                const savedValue = localStorage.getItem(STORAGE_KEY);
+                if (savedValue) {
+                    isPerformanceMode = true;
+                } else {
+                    isPerformanceMode = false;
+                }
+            }
+            
             setupCanvases();
         }
 
@@ -433,11 +495,6 @@
         practiceButton.addEventListener('click', () => {
             window.location.replace('practice.html');
         });
-
-        // This block was removed to stop interference with the back button.
-        // window.addEventListener('popstate', function(event) {
-        //     history.pushState(null, '', window.location.pathname);
-        // });
 
         window.onload = async function() {
             try {
