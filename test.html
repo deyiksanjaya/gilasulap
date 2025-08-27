@@ -81,27 +81,27 @@
         const practiceButton = document.getElementById('practiceButton');
 
         // --- State Variables ---
-        let isPointerDown = false; // Tracks if mouse/finger is down
-        let hasDragged = false;   // Tracks if movement has occurred
-        let startPos = { x: 0, y: 0 }; // Stores starting position of interaction
-        const DRAG_THRESHOLD = 5;     // Min pixels to move to be considered a drag
+        let isPointerDown = false;
+        let hasDragged = false;
+        let startPos = { x: 0, y: 0 };
+        const DRAG_THRESHOLD = 5;
 
         let isRevealed = false; 
         let protectedSymbolValue = null;
         const ERASER_SIZE = 35;
         const STORAGE_KEY = 'symbolicEchoProtected';
         
+        let isLogicLocked = false;
+        let modalIsQueued = false;
+
         // --- Triple Tap Reset Logic ---
         let tapHistory = [];
-        const TRIPLE_TAP_TIME_THRESHOLD = 700; // Time window for taps in milliseconds
-        const TRIPLE_TAP_AREA_THRESHOLD = 50;  // Max distance between taps in pixels
+        const TRIPLE_TAP_TIME_THRESHOLD = 700;
+        const TRIPLE_TAP_AREA_THRESHOLD = 50;
 
-        let spectatorName = "Guest"; // Default name
-        let isPerformanceMode = false; // Determines if the freeze logic is active
-        let modalIsQueued = false; // Flag to prevent multiple modal triggers
-
-        // --- NEW --- Logic for freezing symbols at the start
-        let allSymbolsFrozen = true;
+        let spectatorName = "Guest";
+        // --- CRITICAL --- This determines if the magic works or fails.
+        let isPerformanceMode = false;
 
         // --- Symbol Data ---
         const symbols = [
@@ -249,12 +249,12 @@
         }
 
         function resetBoard() {
-            modalIsQueued = false; 
-            allSymbolsFrozen = true; // --- MODIFIED --- Re-freeze symbols on reset
+            modalIsQueued = false;
+            isLogicLocked = false; 
             symbolStates = symbols.map(s => ({ 
                 value: s.value, 
-                touched: false,
-                bounds: {} 
+                bounds: {},
+                touched: false // Track wiped symbols for fail state
             }));
             
             drawContentOnBottomCanvas();
@@ -265,14 +265,16 @@
 
         function loadState() {
             const savedValue = localStorage.getItem(STORAGE_KEY);
-            if (savedValue) {
+            if (savedValue && isPerformanceMode) { // Only load state in performance mode
                 const savedState = JSON.parse(savedValue);
                 isRevealed = true;
                 protectedSymbolValue = savedState.symbol;
                 spectatorName = savedState.name;
+                isLogicLocked = true;
             } else {
                 isRevealed = false;
                 protectedSymbolValue = null;
+                isLogicLocked = false;
                 if (!isPerformanceMode) {
                     spectatorName = "Guest";
                 }
@@ -281,14 +283,12 @@
         }
 
         function coverWithStroke(x, y) {
-            if (isRevealed) {
+            if (isLogicLocked && protectedSymbolValue !== null) {
                 const protectedSymbol = symbolStates.find(s => s.value === protectedSymbolValue);
                 if (protectedSymbol) {
                     const b = protectedSymbol.bounds;
-                    const closestX = Math.max(b.x, Math.min(x, b.x + b.width));
-                    const closestY = Math.max(b.y, Math.min(y, b.y + b.height));
-                    const distance = Math.hypot(x - closestX, y - closestY);
-                    if (distance < ERASER_SIZE) {
+                    const isInside = x > b.x && x < b.x + b.width && y > b.y && y < b.y + b.height;
+                    if (isInside) {
                         return;
                     }
                 }
@@ -309,41 +309,48 @@
             drawOverlayGreeting();
         }
 
-        function checkTouch(x, y) {
-            if (isRevealed) return;
+        // --- This function only runs in Performance Mode ---
+        function lockInChoice(x, y) {
+            if (!isPerformanceMode || isLogicLocked) return;
 
-            symbolStates.forEach(state => {
+            const touchedSymbol = symbolStates.find(state => {
                 const b = state.bounds;
-                if (!state.touched && x > b.x && x < b.x + b.width && y > b.y && y < b.y + b.height) {
-                    state.touched = true;
-                }
+                return x > b.x && x < b.x + b.width && y > b.y && y < b.y + b.height;
             });
 
-            const touchedSymbols = symbolStates.filter(s => s.touched);
+            if (touchedSymbol) {
+                protectedSymbolValue = touchedSymbol.value;
+                isRevealed = true;
+                isLogicLocked = true;
 
-            if (isPerformanceMode || protectedSymbolValue !== null) {
-                if (touchedSymbols.length === 4) {
-                    const untouchedSymbol = symbolStates.find(s => !s.touched);
-                    if (untouchedSymbol) {
-                        protectedSymbolValue = untouchedSymbol.value;
-                        isRevealed = true;
-                        if (isPerformanceMode) {
-                            const stateToSave = {
-                                symbol: protectedSymbolValue,
-                                name: spectatorName
-                            };
-                            localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
-                        }
-                    }
-                }
-            } else {
-                if (touchedSymbols.length === 5 && !modalIsQueued) {
-                    modalIsQueued = true;
-                    setTimeout(() => {
-                        failModal.classList.remove('hidden');
-                        failModal.classList.add('flex');
-                    }, 2000);
-                }
+                const stateToSave = {
+                    symbol: protectedSymbolValue,
+                    name: spectatorName
+                };
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
+            }
+        }
+
+        // --- This function handles the fail state in Spectator Mode ---
+        function handleWipe(x, y) {
+            if (isPerformanceMode) return; // This logic is only for spectator mode
+
+            const wipedSymbol = symbolStates.find(state => {
+                const b = state.bounds;
+                return !state.touched && x > b.x && x < b.x + b.width && y > b.y && y < b.y + b.height;
+            });
+
+            if (wipedSymbol) {
+                wipedSymbol.touched = true;
+            }
+
+            const touchedCount = symbolStates.filter(s => s.touched).length;
+            if (touchedCount === 5 && !modalIsQueued) {
+                modalIsQueued = true;
+                setTimeout(() => {
+                    failModal.classList.remove('hidden');
+                    failModal.classList.add('flex');
+                }, 1500);
             }
         }
 
@@ -367,41 +374,22 @@
                 document.body.style.backgroundColor = 'white';
                 setTimeout(() => {
                     document.body.style.backgroundColor = 'black';
-                    spectatorName = "Guest";
-                    isRevealed = false;
-                    protectedSymbolValue = null;
-                    resetBoard();
+                    // Re-initialize to correctly set mode and name
+                    initialize();
                 }, 100);
             }
         }
 
-        // --- MODIFIED --- handleStart now includes the unfreeze logic
         function handleStart(e) {
             isPointerDown = true;
             hasDragged = false;
             startPos = getPos(e);
-            const currentPos = getPos(e);
-
-            if (allSymbolsFrozen) {
-                // Check if the first touch is on any symbol
-                const isTouchingSymbol = symbolStates.some(state => {
-                    const b = state.bounds;
-                    return currentPos.x > b.x && currentPos.x < b.x + b.width && currentPos.y > b.y && currentPos.y < b.y + b.height;
-                });
-
-                if (isTouchingSymbol) {
-                    allSymbolsFrozen = false; // Unfreeze all symbols
-                }
-            } else {
-                // If not frozen, proceed with the normal game logic
-                checkTouch(currentPos.x, currentPos.y);
-            }
-
-            // The visual erase happens regardless of the frozen state
-            coverWithStroke(currentPos.x, currentPos.y);
+            
+            lockInChoice(startPos.x, startPos.y);
+            handleWipe(startPos.x, startPos.y);
+            coverWithStroke(startPos.x, startPos.y);
         }
 
-        // --- MODIFIED --- handleMove now includes the unfreeze logic
         function handleMove(e) {
             if (!isPointerDown) return;
             e.preventDefault();
@@ -409,19 +397,8 @@
             const distance = Math.hypot(currentPos.x - startPos.x, currentPos.y - startPos.y);
             if (distance > DRAG_THRESHOLD) hasDragged = true;
 
-            if (allSymbolsFrozen) {
-                 // Check if the drag action is on any symbol
-                const isTouchingSymbol = symbolStates.some(state => {
-                    const b = state.bounds;
-                    return currentPos.x > b.x && currentPos.x < b.x + b.width && currentPos.y > b.y && currentPos.y < b.y + b.height;
-                });
-                if (isTouchingSymbol) {
-                    allSymbolsFrozen = false; // Unfreeze all symbols
-                }
-            } else {
-                checkTouch(currentPos.x, currentPos.y);
-            }
-            
+            lockInChoice(currentPos.x, currentPos.y);
+            handleWipe(currentPos.x, currentPos.y);
             coverWithStroke(currentPos.x, currentPos.y);
         }
 
@@ -445,9 +422,7 @@
                 isPerformanceMode = true;
                 let decoded = customDecode(decodeURIComponent(encodedName));
                 spectatorName = decoded.charAt(0).toUpperCase() + decoded.slice(1);
-                
                 history.replaceState(null, '', window.location.pathname);
-
             } else {
                 isPerformanceMode = false;
             }
