@@ -250,12 +250,11 @@
 
         function resetBoard() {
             modalIsQueued = false;
-            // This line was the source of the bug. It is now correctly handled in loadState.
             isLogicLocked = false; 
             symbolStates = symbols.map(s => ({ 
                 value: s.value, 
                 bounds: {},
-                touched: false // Track wiped symbols for fail state
+                touched: false
             }));
             
             drawContentOnBottomCanvas();
@@ -264,32 +263,25 @@
             drawOverlayGreeting();
         }
 
-        // --- CORRECTED LOGIC ---
-        // This function now resets the board FIRST, then applies the saved state.
-        // This prevents the reset function from overriding the lock.
         function loadState() {
             const savedValue = localStorage.getItem(STORAGE_KEY);
             
-            // First, reset the board to a clean, unlocked state.
             resetBoard(); 
 
-            // NOW, if there's saved data, apply it on top of the clean state.
             if (savedValue) {
                 const savedState = JSON.parse(savedValue);
                 isRevealed = true;
                 protectedSymbolValue = savedState.symbol;
-                isLogicLocked = true; // This correctly overwrites the 'false' from resetBoard.
+                isLogicLocked = true;
 
                 if (!isPerformanceMode) {
                     spectatorName = savedState.name;
                 }
                 
-                // Redraw the greeting with the correct name from storage.
                 topCtx.clearRect(0, 0, topCanvas.width, topCanvas.height);
                 drawOverlayGreeting();
 
             } else {
-                // If no saved state, ensure everything is in its default state.
                 isRevealed = false;
                 protectedSymbolValue = null;
                 isLogicLocked = false; 
@@ -300,6 +292,15 @@
         }
 
         function coverWithStroke(x, y) {
+            // BUG FIX: Prevents wiping the selected symbol on the first touch in performance mode.
+            if (isPerformanceMode && !isLogicLocked) {
+                const touchedSymbol = symbolStates.find(state => {
+                    const b = state.bounds;
+                    return x > b.x && x < b.x + b.width && y > b.y && y < b.y + b.height;
+                });
+                if (touchedSymbol) return; // This is the selection touch, so don't wipe.
+            }
+
             if (isLogicLocked && protectedSymbolValue !== null) {
                 const protectedSymbol = symbolStates.find(s => s.value === protectedSymbolValue);
                 if (protectedSymbol) {
@@ -325,8 +326,7 @@
 
             drawOverlayGreeting();
         }
-
-        // --- This function only runs in Performance Mode ---
+        
         function lockInChoice(x, y) {
             if (!isPerformanceMode || isLogicLocked) return;
 
@@ -347,10 +347,10 @@
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
             }
         }
-
-        // --- This function handles the fail state in Spectator Mode ---
+        
         function handleWipe(x, y) {
-            if (isPerformanceMode) return; // This logic is only for spectator mode
+            // BUG FIX: This logic now only runs for a fresh spectator, not one with loaded data.
+            if (isPerformanceMode || isLogicLocked) return; 
 
             const wipedSymbol = symbolStates.find(state => {
                 const b = state.bounds;
@@ -371,6 +371,7 @@
             }
         }
 
+        // BUG FIX: This now functions as a "Master Reset".
         function handleSecretReset(tapPos) {
             const now = new Date().getTime();
             tapHistory.push({ time: now, pos: tapPos });
@@ -385,13 +386,17 @@
             });
 
             if (allTapsInSameArea) {
+                // Clear everything
                 localStorage.removeItem(STORAGE_KEY);
                 tapHistory = []; 
+                isPerformanceMode = false;
+                spectatorName = "Guest";
                 
+                // Flash effect
                 document.body.style.backgroundColor = 'white';
                 setTimeout(() => {
                     document.body.style.backgroundColor = 'black';
-                    // Re-initialize to correctly set mode and name
+                    // Re-initialize the app from a clean slate
                     initialize();
                 }, 100);
             }
@@ -414,7 +419,7 @@
             const distance = Math.hypot(currentPos.x - startPos.x, currentPos.y - startPos.y);
             if (distance > DRAG_THRESHOLD) hasDragged = true;
 
-            lockInChoice(currentPos.x, currentPos.y);
+            // No need to call lockInChoice on move, only on start
             handleWipe(currentPos.x, currentPos.y);
             coverWithStroke(currentPos.x, currentPos.y);
         }
@@ -439,6 +444,7 @@
                 isPerformanceMode = true;
                 let decoded = customDecode(decodeURIComponent(encodedName));
                 spectatorName = decoded.charAt(0).toUpperCase() + decoded.slice(1);
+                // Clear the hash from the URL so it's not visible to the spectator
                 history.replaceState(null, '', window.location.pathname);
             } else {
                 isPerformanceMode = false;
@@ -447,6 +453,7 @@
             setupCanvases();
         }
 
+        // --- Event Listeners ---
         window.addEventListener('mousedown', handleStart);
         window.addEventListener('mousemove', handleMove);
         window.addEventListener('mouseup', handleEnd);
