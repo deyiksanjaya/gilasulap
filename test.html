@@ -263,18 +263,29 @@
             drawOverlayGreeting();
         }
 
+        // --- MODIFIED LOGIC ---
+        // This function now correctly loads the spectator's state even without a URL hash.
         function loadState() {
             const savedValue = localStorage.getItem(STORAGE_KEY);
-            if (savedValue && isPerformanceMode) { // Only load state in performance mode
+            
+            // The original code only loaded state in performance mode. Now, we load it if it exists, regardless of mode.
+            if (savedValue) {
                 const savedState = JSON.parse(savedValue);
                 isRevealed = true;
                 protectedSymbolValue = savedState.symbol;
-                spectatorName = savedState.name;
                 isLogicLocked = true;
+
+                // The name from the URL hash (set in initialize) takes precedence for the performer.
+                // We only load the name from storage if NOT in performance mode (i.e., it's a returning spectator).
+                if (!isPerformanceMode) {
+                    spectatorName = savedState.name;
+                }
             } else {
+                // No saved state exists.
                 isRevealed = false;
                 protectedSymbolValue = null;
                 isLogicLocked = false;
+                // If not in performance mode (spectator's first visit), default to Guest.
                 if (!isPerformanceMode) {
                     spectatorName = "Guest";
                 }
