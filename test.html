@@ -91,8 +91,9 @@
         const ERASER_SIZE = 35;
         const STORAGE_KEY = 'symbolicEchoProtected';
         
-        let isLogicLocked = false;
-        let modalIsQueued = false;
+        // --- FIX #1: Interaction Lock ---
+        // This flag prevents any touch interaction until the board is fully drawn.
+        let isBoardReady = false;
 
         // --- Triple Tap Reset Logic ---
         let tapHistory = [];
@@ -100,8 +101,8 @@
         const TRIPLE_TAP_AREA_THRESHOLD = 50;
 
         let spectatorName = "Guest";
-        // --- CRITICAL --- This determines if the magic works or fails.
         let isPerformanceMode = false;
+        let modalIsQueued = false;
 
         // --- Symbol Data ---
         const symbols = [
@@ -246,15 +247,21 @@
                 symbol.draw(bottomCtx, x, y, symbolSize);
                 bottomCtx.stroke();
             });
+
+            // --- FIX #1 (Part B): ---
+            // The board is now fully drawn and ready for interaction.
+            isBoardReady = true;
         }
 
         function resetBoard() {
-            modalIsQueued = false;
-            isLogicLocked = false; 
+            // --- FIX #1 (Part A): ---
+            // Lock interaction while the board is being reset and redrawn.
+            isBoardReady = false;
+            modalIsQueued = false; 
             symbolStates = symbols.map(s => ({ 
                 value: s.value, 
-                bounds: {},
-                touched: false
+                touched: false,
+                bounds: {} 
             }));
             
             drawContentOnBottomCanvas();
@@ -265,40 +272,42 @@
 
         function loadState() {
             const savedValue = localStorage.getItem(STORAGE_KEY);
-            
-            resetBoard(); 
-
             if (savedValue) {
                 const savedState = JSON.parse(savedValue);
                 isRevealed = true;
                 protectedSymbolValue = savedState.symbol;
-                isLogicLocked = true;
-
-                if (!isPerformanceMode) {
-                    spectatorName = savedState.name;
-                }
-                
-                topCtx.clearRect(0, 0, topCanvas.width, topCanvas.height);
-                drawOverlayGreeting();
-
+                spectatorName = savedState.name;
             } else {
                 isRevealed = false;
                 protectedSymbolValue = null;
-                isLogicLocked = false; 
                 if (!isPerformanceMode) {
                     spectatorName = "Guest";
                 }
             }
+            resetBoard();
         }
 
+        // --- FIX #2: Absolute Protection ---
+        // This function now uses a simple, robust bounding box check.
         function coverWithStroke(x, y) {
-            if (isLogicLocked && protectedSymbolValue !== null) {
+            if (isRevealed) {
                 const protectedSymbol = symbolStates.find(s => s.value === protectedSymbolValue);
-                if (protectedSymbol) {
+                if (protectedSymbol && protectedSymbol.bounds.width) { // Ensure bounds are calculated
                     const b = protectedSymbol.bounds;
-                    const isInside = x > b.x && x < b.x + b.width && y > b.y && y < b.y + b.height;
-                    if (isInside) {
-                        return;
+                    
+                    // Create an expanded "force field" around the symbol.
+                    // If the center of the eraser enters this field, the wipe is cancelled.
+                    // This prevents any "chipping" at the edges.
+                    const forceField = {
+                        x: b.x - ERASER_SIZE,
+                        y: b.y - ERASER_SIZE,
+                        width: b.width + ERASER_SIZE * 2,
+                        height: b.height + ERASER_SIZE * 2
+                    };
+
+                    if (x > forceField.x && x < forceField.x + forceField.width &&
+                        y > forceField.y && y < forceField.y + forceField.height) {
+                        return; // Absolute protection.
                     }
                 }
             }
@@ -317,49 +326,42 @@
 
             drawOverlayGreeting();
         }
-        
-        // This function now only runs in performance mode to lock the spectator's choice.
-        function lockSpectatorChoice(x, y) {
-            const touchedSymbol = symbolStates.find(state => {
+
+        function checkTouch(x, y) {
+            if (isRevealed) return;
+
+            symbolStates.forEach(state => {
                 const b = state.bounds;
-                return x > b.x && x < b.x + b.width && y > b.y && y < b.y + b.height;
+                if (!state.touched && x > b.x && x < b.x + b.width && y > b.y && y < b.y + b.height) {
+                    state.touched = true;
+                }
             });
 
-            if (touchedSymbol) {
-                protectedSymbolValue = touchedSymbol.value;
-                isRevealed = true;
-                isLogicLocked = true;
+            const touchedSymbols = symbolStates.filter(s => s.touched);
 
-                const stateToSave = {
-                    symbol: protectedSymbolValue,
-                    name: spectatorName
-                };
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
-                return true; // Indicate that a selection was made
-            }
-            return false; // Indicate no selection was made
-        }
-        
-        function handleWipe(x, y) {
-            // This is the "fail state" logic for a regular user (not in performance mode)
-            if (isPerformanceMode || isLogicLocked) return; 
-
-            const wipedSymbol = symbolStates.find(state => {
-                const b = state.bounds;
-                return !state.touched && x > b.x && x < b.x + b.width && y > b.y && y < b.y + b.height;
-            });
-
-            if (wipedSymbol) {
-                wipedSymbol.touched = true;
-            }
-
-            const touchedCount = symbolStates.filter(s => s.touched).length;
-            if (touchedCount === 5 && !modalIsQueued) {
-                modalIsQueued = true;
-                setTimeout(() => {
-                    failModal.classList.remove('hidden');
-                    failModal.classList.add('flex');
-                }, 1500);
+            if (isPerformanceMode || protectedSymbolValue !== null) {
+                if (touchedSymbols.length === 4) {
+                    const untouchedSymbol = symbolStates.find(s => !s.touched);
+                    if (untouchedSymbol) {
+                        protectedSymbolValue = untouchedSymbol.value;
+                        isRevealed = true;
+                        if (isPerformanceMode) {
+                            const stateToSave = {
+                                symbol: protectedSymbolValue,
+                                name: spectatorName
+                            };
+                            localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
+                        }
+                    }
+                }
+            } else {
+                if (touchedSymbols.length === 5 && !modalIsQueued) {
+                    modalIsQueued = true;
+                    setTimeout(() => {
+                        failModal.classList.remove('hidden');
+                        failModal.classList.add('flex');
+                    }, 2000);
+                }
             }
         }
 
@@ -383,47 +385,36 @@
                 document.body.style.backgroundColor = 'white';
                 setTimeout(() => {
                     document.body.style.backgroundColor = 'black';
-                    // Re-initialize from scratch, which will also clear the performance mode flag.
-                    initialize();
+                    spectatorName = "Guest";
+                    isRevealed = false;
+                    protectedSymbolValue = null;
+                    resetBoard();
                 }, 100);
             }
         }
 
-        // --- RE-ENGINEERED LOGIC TO IMPLEMENT YOUR METHOD ---
         function handleStart(e) {
+            if (!isBoardReady) return; // Interaction lock
             isPointerDown = true;
             hasDragged = false;
             startPos = getPos(e);
-            
-            // If in performance mode AND no symbol has been chosen yet...
-            if (isPerformanceMode && !isLogicLocked) {
-                // ...the first touch is ONLY for selection.
-                const selectionMade = lockSpectatorChoice(startPos.x, startPos.y);
-                // If a symbol was successfully selected, this touch's job is done. Do not wipe.
-                if (selectionMade) {
-                    return;
-                }
-            }
-            
-            // For all other cases (not in performance mode, or after a selection has been made),
-            // proceed with the normal wiping logic.
-            handleWipe(startPos.x, startPos.y);
-            coverWithStroke(startPos.x, startPos.y);
+            const currentPos = getPos(e);
+            checkTouch(currentPos.x, currentPos.y);
+            coverWithStroke(currentPos.x, currentPos.y);
         }
 
         function handleMove(e) {
-            if (!isPointerDown) return;
+            if (!isBoardReady || !isPointerDown) return; // Interaction lock
             e.preventDefault();
             const currentPos = getPos(e);
             const distance = Math.hypot(currentPos.x - startPos.x, currentPos.y - startPos.y);
             if (distance > DRAG_THRESHOLD) hasDragged = true;
-
-            handleWipe(currentPos.x, currentPos.y);
+            checkTouch(currentPos.x, currentPos.y);
             coverWithStroke(currentPos.x, currentPos.y);
         }
 
         function handleEnd() {
-            if (!isPointerDown) return;
+            if (!isBoardReady || !isPointerDown) return; // Interaction lock
             if (!hasDragged) handleSecretReset(startPos);
             isPointerDown = false;
         }
@@ -442,7 +433,9 @@
                 isPerformanceMode = true;
                 let decoded = customDecode(decodeURIComponent(encodedName));
                 spectatorName = decoded.charAt(0).toUpperCase() + decoded.slice(1);
+                
                 history.replaceState(null, '', window.location.pathname);
+
             } else {
                 isPerformanceMode = false;
             }
@@ -450,7 +443,6 @@
             setupCanvases();
         }
 
-        // --- Event Listeners ---
         window.addEventListener('mousedown', handleStart);
         window.addEventListener('mousemove', handleMove);
         window.addEventListener('mouseup', handleEnd);
