@@ -91,7 +91,6 @@
         const ERASER_SIZE = 35;
         const STORAGE_KEY = 'symbolicEchoProtected';
         
-        // --- BUG FIX: Interaction Lock ---
         let isBoardReady = false;
         let isLogicLocked = false;
 
@@ -192,7 +191,7 @@
         }
 
         function drawContentOnBottomCanvas() {
-            isBoardReady = false; // Lock interaction
+            isBoardReady = false;
             const clientWidth = bottomCanvas.clientWidth;
             const clientHeight = bottomCanvas.clientHeight;
             
@@ -248,7 +247,7 @@
                 symbol.draw(bottomCtx, x, y, symbolSize);
                 bottomCtx.stroke();
             });
-            isBoardReady = true; // Unlock interaction
+            isBoardReady = true;
         }
 
         function resetBoard() {
@@ -267,14 +266,22 @@
             drawOverlayGreeting();
         }
 
+        // --- CORRECTED LOGIC ---
+        // The board is reset FIRST, then the saved state is applied on top.
         function loadState() {
+            resetBoard(); // Start with a clean slate.
+
             const savedValue = localStorage.getItem(STORAGE_KEY);
             if (savedValue) {
                 const savedState = JSON.parse(savedValue);
                 isRevealed = true;
                 protectedSymbolValue = savedState.symbol;
                 spectatorName = savedState.name;
-                isLogicLocked = true; // Lock logic if loaded from storage
+                isLogicLocked = true; // This now correctly overwrites the 'false' from resetBoard.
+
+                // Redraw the greeting with the correct name from storage.
+                topCtx.clearRect(0, 0, topCanvas.width, topCanvas.height);
+                drawOverlayGreeting();
             } else {
                 isRevealed = false;
                 protectedSymbolValue = null;
@@ -283,10 +290,8 @@
                     spectatorName = "Guest";
                 }
             }
-            resetBoard();
         }
 
-        // --- BUG FIX: Absolute "Force Field" Protection ---
         function coverWithStroke(x, y) {
             if (isLogicLocked) {
                 const protectedSymbol = symbolStates.find(s => s.value === protectedSymbolValue);
@@ -301,7 +306,7 @@
 
                     if (x > forceField.x && x < forceField.x + forceField.width &&
                         y > forceField.y && y < forceField.y + forceField.height) {
-                        return; // Absolute protection, no chipping.
+                        return;
                     }
                 }
             }
@@ -321,7 +326,6 @@
             drawOverlayGreeting();
         }
 
-        // --- CORRECT LOGIC: Locks the first symbol touched by spectator ---
         function lockSpectatorChoice(x, y) {
             const touchedSymbol = symbolStates.find(state => {
                 const b = state.bounds;
@@ -338,12 +342,11 @@
                     name: spectatorName
                 };
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
-                return true; // Selection was made
+                return true;
             }
-            return false; // No selection was made
+            return false;
         }
         
-        // This is the "fail state" logic for a regular user
         function handleWipe(x, y) {
             if (isPerformanceMode || isLogicLocked) return; 
 
@@ -386,14 +389,13 @@
                 document.body.style.backgroundColor = 'white';
                 setTimeout(() => {
                     document.body.style.backgroundColor = 'black';
-                    initialize(); // Re-initialize from scratch
+                    initialize();
                 }, 100);
             }
         }
 
-        // --- CORRECT LOGIC: Implements your "first touch" method with bug fixes ---
         function handleStart(e) {
-            if (!isBoardReady) return; // Interaction lock
+            if (!isBoardReady) return;
             isPointerDown = true;
             hasDragged = false;
             startPos = getPos(e);
@@ -401,7 +403,7 @@
             if (isPerformanceMode && !isLogicLocked) {
                 const selectionMade = lockSpectatorChoice(startPos.x, startPos.y);
                 if (selectionMade) {
-                    return; // Selection is the ONLY action on this touch.
+                    return;
                 }
             }
             
@@ -410,7 +412,7 @@
         }
 
         function handleMove(e) {
-            if (!isBoardReady || !isPointerDown) return; // Interaction lock
+            if (!isBoardReady || !isPointerDown) return;
             e.preventDefault();
             const currentPos = getPos(e);
             const distance = Math.hypot(currentPos.x - startPos.x, currentPos.y - startPos.y);
@@ -421,7 +423,7 @@
         }
 
         function handleEnd() {
-            if (!isBoardReady || !isPointerDown) return; // Interaction lock
+            if (!isBoardReady || !isPointerDown) return;
             if (!hasDragged) handleSecretReset(startPos);
             isPointerDown = false;
         }
