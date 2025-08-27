@@ -318,7 +318,8 @@
             drawOverlayGreeting();
         }
         
-        function lockInChoice(x, y) {
+        // This function now only runs in performance mode to lock the spectator's choice.
+        function lockSpectatorChoice(x, y) {
             const touchedSymbol = symbolStates.find(state => {
                 const b = state.bounds;
                 return x > b.x && x < b.x + b.width && y > b.y && y < b.y + b.height;
@@ -340,6 +341,7 @@
         }
         
         function handleWipe(x, y) {
+            // This is the "fail state" logic for a regular user (not in performance mode)
             if (isPerformanceMode || isLogicLocked) return; 
 
             const wipedSymbol = symbolStates.find(state => {
@@ -381,28 +383,30 @@
                 document.body.style.backgroundColor = 'white';
                 setTimeout(() => {
                     document.body.style.backgroundColor = 'black';
+                    // Re-initialize from scratch, which will also clear the performance mode flag.
                     initialize();
                 }, 100);
             }
         }
 
-        // --- BUG FIX: Re-engineered touch start logic ---
+        // --- RE-ENGINEERED LOGIC TO IMPLEMENT YOUR METHOD ---
         function handleStart(e) {
             isPointerDown = true;
             hasDragged = false;
             startPos = getPos(e);
             
-            // In performance mode, the first touch is ONLY for selection.
+            // If in performance mode AND no symbol has been chosen yet...
             if (isPerformanceMode && !isLogicLocked) {
-                // lockInChoice now returns true if a selection was made.
-                const selectionMade = lockInChoice(startPos.x, startPos.y);
-                // If a selection was made, this touch event's job is done. Do not wipe.
+                // ...the first touch is ONLY for selection.
+                const selectionMade = lockSpectatorChoice(startPos.x, startPos.y);
+                // If a symbol was successfully selected, this touch's job is done. Do not wipe.
                 if (selectionMade) {
                     return;
                 }
             }
             
-            // If not a selection touch, proceed with normal wiping logic.
+            // For all other cases (not in performance mode, or after a selection has been made),
+            // proceed with the normal wiping logic.
             handleWipe(startPos.x, startPos.y);
             coverWithStroke(startPos.x, startPos.y);
         }
