@@ -250,6 +250,7 @@
 
         function resetBoard() {
             modalIsQueued = false;
+            // This line was the source of the bug. It is now correctly handled in loadState.
             isLogicLocked = false; 
             symbolStates = symbols.map(s => ({ 
                 value: s.value, 
@@ -263,34 +264,39 @@
             drawOverlayGreeting();
         }
 
-        // --- MODIFIED LOGIC ---
-        // This function now correctly loads the spectator's state even without a URL hash.
+        // --- CORRECTED LOGIC ---
+        // This function now resets the board FIRST, then applies the saved state.
+        // This prevents the reset function from overriding the lock.
         function loadState() {
             const savedValue = localStorage.getItem(STORAGE_KEY);
             
-            // The original code only loaded state in performance mode. Now, we load it if it exists, regardless of mode.
+            // First, reset the board to a clean, unlocked state.
+            resetBoard(); 
+
+            // NOW, if there's saved data, apply it on top of the clean state.
             if (savedValue) {
                 const savedState = JSON.parse(savedValue);
                 isRevealed = true;
                 protectedSymbolValue = savedState.symbol;
-                isLogicLocked = true;
+                isLogicLocked = true; // This correctly overwrites the 'false' from resetBoard.
 
-                // The name from the URL hash (set in initialize) takes precedence for the performer.
-                // We only load the name from storage if NOT in performance mode (i.e., it's a returning spectator).
                 if (!isPerformanceMode) {
                     spectatorName = savedState.name;
                 }
+                
+                // Redraw the greeting with the correct name from storage.
+                topCtx.clearRect(0, 0, topCanvas.width, topCanvas.height);
+                drawOverlayGreeting();
+
             } else {
-                // No saved state exists.
+                // If no saved state, ensure everything is in its default state.
                 isRevealed = false;
                 protectedSymbolValue = null;
-                isLogicLocked = false;
-                // If not in performance mode (spectator's first visit), default to Guest.
+                isLogicLocked = false; 
                 if (!isPerformanceMode) {
                     spectatorName = "Guest";
                 }
             }
-            resetBoard();
         }
 
         function coverWithStroke(x, y) {
