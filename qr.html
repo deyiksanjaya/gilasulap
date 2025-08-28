@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gila Sulap QR Generator - Final</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Manrope:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- QR Code & JSZip Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    
+    <style>
+        body {
+            font-family: 'Manrope', sans-serif;
+            background-color: #f0f2f5;
+        }
+        .font-title {
+            font-family: 'Playfair Display', serif;
+        }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        .animate-slideIn {
+            animation: slideIn 0.3s ease-out forwards;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 dark:bg-slate-900 min-h-screen p-4 sm:p-8 transition-colors duration-300">
+
+    <div class="max-w-4xl mx-auto">
+        <div class="w-full bg-white dark:bg-slate-800 rounded-2xl shadow-2xl shadow-gray-500/10 dark:shadow-black/20 p-6 sm:p-8">
+            
+            <div class="text-center mb-8">
+                <h1 class="font-title text-3xl sm:text-4xl font-bold text-gray-800 dark:text-white">
+                    Gila Sulap QR Generator
+                </h1>
+                <p class="text-gray-500 dark:text-gray-400 mt-2">Buat QR code dengan judul kustom di bawahnya.</p>
+            </div>
+
+            <div id="input-container" class="space-y-4 mb-4">
+                <!-- Dynamic inputs will be added here -->
+            </div>
+
+            <div class="flex flex-col sm:flex-row gap-3 mb-6 border-b border-gray-200 dark:border-slate-700 pb-6">
+                <button id="add-input-btn" class="w-full sm:w-auto flex items-center justify-center gap-2 bg-gray-200 dark:bg-slate-700 hover:bg-gray-300 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-200 font-semibold py-2.5 px-5 rounded-lg transition-all">
+                    <img src="https://img.icons8.com/ios-glyphs/30/plus-math.png" alt="Add Icon" class="w-5 h-5 dark:filter dark:invert">
+                    <span>Tambah Paket QR</span>
+                </button>
+                <button id="generate-btn" class="w-full sm:w-auto flex items-center justify-center gap-3 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-all">
+                    <img src="https://img.icons8.com/pastel-glyph/64/qr-code--v2.png" alt="QR Code Icon" class="w-6 h-6 filter invert">
+                    <span>Generate Semua QR</span>
+                </button>
+            </div>
+            
+            <div id="results-section" class="hidden">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-2xl font-bold text-gray-700 dark:text-white">Hasil Kode QR</h2>
+                    <button id="download-all-btn" class="flex items-center justify-center gap-2 bg-green-500 hover:bg-green-600 text-white font-semibold py-2.5 px-5 rounded-lg shadow-lg shadow-green-500/20 hover:shadow-xl hover:-translate-y-1 transition-all">
+                        <img src="https://img.icons8.com/ios-glyphs/30/ffffff/downloads.png" alt="Download Icon" class="w-5 h-5">
+                        <span>Download Semua (.zip)</span>
+                    </button>
+                </div>
+                <div id="qr-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+                    <!-- Generated QR codes will appear here -->
+                </div>
+            </div>
+            
+            <p id="error-message" class="text-red-500 text-center mt-4 hidden font-medium">Harap isi link/teks pada setidaknya satu paket.</p>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const addInputBtn = document.getElementById('add-input-btn');
+        const generateBtn = document.getElementById('generate-btn');
+        const downloadAllBtn = document.getElementById('download-all-btn');
+        const inputContainer = document.getElementById('input-container');
+        const resultsSection = document.getElementById('results-section');
+        const qrGrid = document.getElementById('qr-grid');
+        const errorMessage = document.getElementById('error-message');
+        
+        let inputCounter = 0;
+
+        const updateGenerateButtonState = () => {
+            const inputs = inputContainer.querySelectorAll('.qr-input');
+            const allFilled = Array.from(inputs).every(input => input.value.trim() !== '');
+
+            if (allFilled && inputs.length > 0) {
+                generateBtn.disabled = false;
+                generateBtn.classList.remove('bg-gray-400', 'cursor-not-allowed', 'filter', 'grayscale');
+                generateBtn.classList.add('bg-blue-600', 'hover:bg-blue-700', 'hover:-translate-y-1', 'shadow-blue-500/20');
+            } else {
+                generateBtn.disabled = true;
+                generateBtn.classList.add('bg-gray-400', 'cursor-not-allowed', 'filter', 'grayscale');
+                generateBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700', 'hover:-translate-y-1', 'shadow-blue-500/20');
+            }
+        };
+
+        const addInputField = () => {
+            inputCounter++;
+            const inputGroup = document.createElement('div');
+            inputGroup.className = 'input-group bg-gray-50 dark:bg-slate-700/50 p-4 rounded-lg animate-slideIn flex gap-4 items-stretch';
+            inputGroup.innerHTML = `
+                <span class="font-bold text-gray-500 dark:text-gray-400 pt-2.5 flex-shrink-0">${inputCounter}.</span>
+                <div class="flex-grow space-y-2">
+                    <input type="text" placeholder="Judul QR (Opsional)" class="qr-title w-full bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-md px-3 py-2 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all">
+                    <input type="text" placeholder="Masukkan URL atau teks (Wajib)" class="qr-input w-full bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-md px-3 py-2 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all">
+                </div>
+                <div class="border-l border-gray-200 dark:border-slate-600"></div>
+                <div class="flex-shrink-0 flex items-center justify-center">
+                    <button class="remove-btn flex-shrink-0 bg-red-500 hover:bg-red-600 text-white p-2.5 rounded-lg border-b-4 border-red-700 active:border-b-2 active:translate-y-0.5 transform transition">
+                        <img src="https://img.icons8.com/ios-glyphs/30/trash--v1.png" alt="Remove Icon" class="w-5 h-5 filter invert">
+                    </button>
+                </div>
+            `;
+            inputContainer.appendChild(inputGroup);
+            
+            const newTitleInput = inputGroup.querySelector('.qr-title');
+            newTitleInput.focus();
+            
+            inputGroup.querySelector('.qr-input').addEventListener('input', updateGenerateButtonState);
+            
+            inputGroup.querySelector('.remove-btn').addEventListener('click', () => {
+                inputGroup.remove();
+                updateInputNumbers();
+                updateGenerateButtonState();
+            });
+
+            updateGenerateButtonState();
+        };
+
+        const updateInputNumbers = () => {
+            const allInputGroups = inputContainer.querySelectorAll('.input-group');
+            allInputGroups.forEach((group, index) => {
+                group.querySelector('span').textContent = `${index + 1}.`;
+            });
+            inputCounter = allInputGroups.length;
+        };
+
+        const generateAll = () => {
+            qrGrid.innerHTML = '';
+            errorMessage.classList.add('hidden');
+            
+            const inputGroups = Array.from(inputContainer.querySelectorAll('.input-group'));
+            const validGroups = inputGroups.filter(group => group.querySelector('.qr-input').value.trim() !== '');
+
+            if (validGroups.length === 0) {
+                errorMessage.classList.remove('hidden');
+                resultsSection.classList.add('hidden');
+                return;
+            }
+
+            resultsSection.classList.remove('hidden');
+
+            validGroups.forEach((group, index) => {
+                const text = group.querySelector('.qr-input').value.trim();
+                const titleInput = group.querySelector('.qr-title').value.trim();
+                const isTitleProvided = titleInput !== '';
+                const displayTitle = isTitleProvided ? titleInput : `QR Code #${index + 1}`;
+                
+                const qrCard = document.createElement('div');
+                qrCard.className = 'bg-white dark:bg-slate-700 p-4 rounded-lg shadow-md flex flex-col items-center text-center';
+                qrGrid.appendChild(qrCard);
+
+                createQrWithTitle(text, displayTitle, qrCard, isTitleProvided);
+            });
+        };
+
+        const createQrWithTitle = (text, title, targetCard, isTitleProvided) => {
+            const tempDiv = document.createElement('div');
+            tempDiv.style.display = 'none';
+            document.body.appendChild(tempDiv);
+            
+            new QRCode(tempDiv, { text: text, width: 256, height: 256, correctLevel: QRCode.CorrectLevel.H });
+
+            setTimeout(() => {
+                const sourceCanvas = tempDiv.querySelector('canvas');
+                if (!sourceCanvas) {
+                    document.body.removeChild(tempDiv);
+                    return;
+                }
+
+                const finalCanvas = document.createElement('canvas');
+                const padding = 20;
+                const titleHeight = 50;
+                const qrSize = 256;
+
+                finalCanvas.width = qrSize + padding * 2;
+                finalCanvas.height = qrSize + padding * 2 + titleHeight;
+                const ctx = finalCanvas.getContext('2d');
+
+                ctx.fillStyle = 'white';
+                ctx.fillRect(0, 0, finalCanvas.width, finalCanvas.height);
+                ctx.drawImage(sourceCanvas, padding, padding, qrSize, qrSize);
+
+                ctx.fillStyle = '#000000';
+                ctx.font = 'bold 20px Manrope';
+                ctx.textAlign = 'center';
+                ctx.fillText(title, finalCanvas.width / 2, finalCanvas.height - 25);
+
+                targetCard.appendChild(finalCanvas);
+                
+                // --- NEW FILENAME LOGIC ---
+                let finalFilename;
+                if (isTitleProvided) {
+                    // Sanitize the user-provided title for the filename
+                    finalFilename = (title.replace(/[^a-z0-9]/gi, '_').toLowerCase() || 'qr-code') + '.png';
+                } else {
+                    // Generate default filename if title was empty
+                    const date = new Date();
+                    const dateString = `${date.getFullYear()}${(date.getMonth() + 1).toString().padStart(2, '0')}${date.getDate().toString().padStart(2, '0')}`;
+                    const randomString = Math.random().toString(36).substring(2, 8);
+                    finalFilename = `gilasulapQR-${dateString}-${randomString}.png`;
+                }
+
+                const downloadLink = document.createElement('a');
+                downloadLink.href = finalCanvas.toDataURL('image/png');
+                downloadLink.download = finalFilename;
+                downloadLink.className = 'mt-4 inline-flex items-center justify-center gap-2 bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-4 rounded-lg text-sm transition-all';
+                downloadLink.innerHTML = `<img src="https://img.icons8.com/ios-glyphs/30/ffffff/downloads.png" alt="Download Icon" class="w-4 h-4"> Download`;
+                targetCard.appendChild(downloadLink);
+
+                document.body.removeChild(tempDiv);
+            }, 50);
+        };
+        
+        const downloadAllAsZip = () => {
+            const zip = new JSZip();
+            const qrCards = qrGrid.querySelectorAll('.bg-white');
+
+            qrCards.forEach((card) => {
+                const canvas = card.querySelector('canvas');
+                const downloadLink = card.querySelector('a');
+                if (canvas && downloadLink) {
+                    const filename = downloadLink.download;
+                    const dataUrl = canvas.toDataURL('image/png').split(',')[1];
+                    zip.file(filename, dataUrl, { base64: true });
+                }
+            });
+
+            zip.generateAsync({ type: 'blob' }).then(content => {
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(content);
+                link.download = 'gila-sulap-qrcodes.zip';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            });
+        };
+
+        // --- Initial State & Event Listeners ---
+        addInputField();
+        addInputBtn.addEventListener('click', addInputField);
+        generateBtn.addEventListener('click', generateAll);
+        downloadAllBtn.addEventListener('click', downloadAllAsZip);
+    </script>
+</body>
+</html>
