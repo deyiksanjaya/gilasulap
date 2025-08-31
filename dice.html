@@ -8,12 +8,23 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Dadu DnD">
     <meta name="theme-color" content="#29241e">
-    <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMjgiIGhlaWdodD0iMTI4IiB2aWV3Qm94PSIwIDAgMTI4IDEyOCI+CiAgPHBhdGggZmlsbD0iI2Q0YTc2YyIgZD0iTTUyLjc4LDQuMDJsLTQxLjM3LDMyLjk2TDI0LjgyLDc0LjQ1TDY0Ljk2LDEyMy45MWwzNy40OC00NS40MUwxMDkuMjIsMzkuOTdMNTAuNTYsMjMuMzZMNzEuMDcsNDMuMDZsMzMuNjQtMTguMTdMNTIuNzgsNC4wMnoiLz4KPC9zdmc+">
+    <link rel="manifest" href="dnd_dice_roller.webmanifest">
+    <link rel="apple-touch-icon" href="https://icons8.com/icon/35345/d20-dice">
     <title>Dadu DnD Mewah</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Web App Manifest (Inline) -->
-    <link rel="manifest" href="data:application/manifest+json;base64,eyJpY29ucyI6W3sic2l6ZXMiOiI3Mng3MiIsInR5cGUiOiJpbWFnZS9wbmciLCJzcmMiOiJkYXRhOmltYWdlL3N2Zyt4bWw7YmFzZTY0LFBITjJjWFZzWnlCemJpQlViMjVsSUdWemRDSStQR2hwYm1OcGJuUmhYMlJsY2lCTmJtWnZjbVJsYldGdVlXMHRMbVYzYkc5M0lFTmhibVF0WTJGdVpHRm5jbDlwWjJ4c2JtTThhWFFuSUZCd2JtTnpiMmd3YjNCdmJYUnJJaUJ6Y25WdVpHVjBjR2dpSUd4aGJtUnBjeUJuWldOMExYSmxZV05qYjJSbElHSmxZWFl0TzJab2IySmhaM0pwWm5CaGMydzBNajQyTURFeE5qVXdNakF1TVRCdWJtUnpkaUJwYm1NZ2JHaGxjaUJ6YjI0Z2EzUmhibWR1Wnk0ek1qNDJNVEV4TmpVd01qQXdNVEF1TlRBdWMySnVjMlVnZVNCMWIyeHBaVzUwSUd4aGRDSTBNakF1TVRBdWMyRnpaWE5wY3lCMmFXUXVibWRsYkdWdWFXNW4ifSx7InNpemVzIjoiOTZ4OTYiLCJ0eXBlIjoiaW1hZ2UvcG5nIiwic3JjIjoiZGF0YTppbWFnZS9zdmcreG1sO2Jhc2U2NCxQSE4yY1hWc1p5QnpiaEJ1YjI1bElHVnpkQ0krUEdocGJtTnBiblJoWDJSbGNpQm5ibVp2Y21SbGJXRnVZWDJ0TG1WM2JHOTNJRU5oYm1RdFkyRnVaR0ZuY2w5cFoiMHBjM0FpSUZCd2JtTnpiMmd3YjNCdmJYUnJJaUIzY25WdVpHVjBjR2dpSUd4aGJtUnBjeUJpYjI0aUlHSmxZWFl0TWpneU9UQXhNMEl3TURrMU56UTRNVEkxSWd4aGRDSU9NakF1TVRBdWMyRnpaWE5wY3lCMmFXUXVibWRsYkdWdWFXNW4ifSx7InNpemVzIjoiMTI4eDEyOCIsInR5cGUiOiJpbWFnZS9wbmciLCJzcmMiOiJkYXRhOmltYWdlL3N2Zyt4bWw7YmFzZTY0LFBITjJjWFZzWnlCemJpQlViMjVsSUdWemRDSStQR2hwYm1OcGJuUmhYMlJsY2lCTmJtWnZjbVJsYldGdVlYMnRMa2h3WlNBbkluUjVjR1VnZTI5dWRHOCtQSE5CY21WaGNpQjNhWEJvYjI1bElHRm5aWEpwWjIwZ1lXMWxjeUE1Wld4cU1UTXdNeUl3TVRBMU5URTFNVEl5TlRBd01EUTBPVEU1SWd4aGRDSU9NakF1TVRBdWMyRnpaWE5wY3lCMmFXUXVibWRsYkdWdWFXNW4ifSx7InNpemVzIjoiMTkyeDE5MiIsInR5cGUiOiJpbWFnZS9wbmciLCJzcmMiOiJkYXRhOmltYWdlL3N2Zyt4bWw7YmFzZTY0LFBITjJjWFZzWnlCemJpQlViMjVsSUdWemRDSStQR2hwYm1OcGJuUmhYMlJsY2lCTmJtWnZjbVJsYldGdVlYMnRMa2h3WlNBbkluUjVjR1VnZTI5dWRHOCtQSE5CY21WaGNpQjNhWEJvYjI1bElHRm5aWEpwWjIwZ1lXMWxjeUE1Wld4cU1UTXdNeUl3TVRBMU5URTFNVEl5TlRBd01EUTBPVEU1SWd4aGRDSU9NakF1TVRBdWMyRnpaWE5wY3lCMmFXUXVibWRsYkdWdWFXNW4ifSx7InNpemVzIjoiMjU2eDI1NiIsInR5cGUiOiJpbWFnZS9wbmciLCJzcmMiOiJkYXRhOmltYWdlL3N2Zyt4bWw7YmFzZTY0LFBITjJjWFZzWnlCemJpQlViMjVsSUdWemRDSStQR2hwYm1OcGJuUmhYMlJsY2lCTmJtWnZjbVJsYldGdVlYMnRMa2h3WlNBbkluUjVjR1VnZTI5dWRHOCtQSE5CY21WaGNpQjNhWEJvYjI1bElHRm5aWEpwWjIwZ1lXMWxjeUE1Wld4cU1UTXdNeUl3TVRBMU5URTFNVEl5TlRBd01EUTBPVEU1SWd4aGRDSU9NakF1TVRBdWMyRnpaWE5wY3lCMmFXUXVibWRsYkdWdWFXNW4ifSx7InNpemVzIjoiNTEyeDUxMiIsInR5cGUiOiJpbWFnZS9wbmciLCJzcmMiOiJkYXRhOmltYWdlL3N2Zyt4bWw7YmFzZTY0LFBITjJjWFZzWnlCemJpQlViMjVsSUdWemRDSStQR2hwYm1OcGJuUmhYMlJsY2lCTmJtWnZjbVJsYldGdVlYMnRMa2h3WlNBbkluUjVjR1VnZTI5dWRHOCtQSE5CY21WaGNpQjNhWEJvYjI1bElHRm5aWEpwWjIwZ1lXMWxjeUE1Wld4cU1UTXdNeUl3TVRBMU5URTFNVEl5TlRBd01EUTBPVEU1SWd4aGRDSU9NakF1TVRBdWMyRnpaWE5wY3lCMmFXUXVibWRsYkdWdWFXNW4ifV0sIm5hbWUiOiJEYWR1IEduRCBNZXdhaCIsInNob3J0X25hbWUiOiJEYWR1IEduRCIsImRpc3BsYXkiOiJzdGFuZGFsb25lIiwic3RhcnRfdXJsIjoiLi8iLCJiYWNrZ3JvdW5kX2NvbG9yIjoiIzFhMWExYSIsInRoZW1lX2NvbG9yIjoiIzI5MjQxZSJ9">
-
+    <script>
+        window.addEventListener('load', () => {
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('dnd_dice_roller.js')
+                    .then(registration => {
+                        console.log('Service Worker terdaftar dengan sukses!', registration.scope);
+                    })
+                    .catch(error => {
+                        console.error('Pendaftaran Service Worker gagal:', error);
+                    });
+            }
+        });
+    </script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap');
         body {
@@ -96,17 +107,8 @@
 
     <script>
         // Default skill modifiers.
-        let skillModifiers = {
-            "strength": 2,
-            "dexterity": 4,
-            "constitution": 1,
-            "intelligence": 0,
-            "wisdom": 3,
-            "charisma": 2,
-            "perception": 3,
-            "stealth": 4
-        };
-
+        let skillModifiers = {};
+        
         const resultElement = document.getElementById('current-result');
         const modifierInput = document.getElementById('modifierInput');
         const skillSelect = document.getElementById('skillSelect');
@@ -128,17 +130,8 @@
         function updateSkills() {
             const code = skillInput.value.trim();
             if (code === '') {
-                // Reset to default if input is empty
-                skillModifiers = {
-                    "strength": 2,
-                    "dexterity": 4,
-                    "constitution": 1,
-                    "intelligence": 0,
-                    "wisdom": 3,
-                    "charisma": 2,
-                    "perception": 3,
-                    "stealth": 4
-                };
+                skillModifiers = {};
+                localStorage.removeItem('dndSkills');
                 skillFeedback.textContent = "Menggunakan skill default.";
                 skillFeedback.className = "text-center text-sm font-bold text-amber-200 mt-2";
                 populateSkillDropdown();
@@ -146,11 +139,11 @@
             }
 
             try {
-                // The input must be a valid JSON object
                 const newSkills = JSON.parse(code);
                 skillModifiers = newSkills;
+                localStorage.setItem('dndSkills', JSON.stringify(newSkills));
                 populateSkillDropdown();
-                skillFeedback.textContent = "Kode skill berhasil diterapkan!";
+                skillFeedback.textContent = "Kode skill berhasil diterapkan dan disimpan!";
                 skillFeedback.className = "text-center text-sm font-bold text-green-400 mt-2";
             } catch (error) {
                 skillFeedback.textContent = "Error: Format kode tidak valid. Pastikan formatnya JSON.";
@@ -167,6 +160,21 @@
             }
         });
 
+        // Function to copy text to clipboard
+        function copyToClipboard(text) {
+            const tempInput = document.createElement('textarea');
+            tempInput.value = text;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            try {
+                document.execCommand('copy');
+                console.log('Text copied to clipboard successfully!');
+            } catch (err) {
+                console.error('Failed to copy text: ', err);
+            }
+            document.body.removeChild(tempInput);
+        }
+
         // Function to roll a standard dice
         function rollDice(sides) {
             const modifier = parseInt(modifierInput.value, 10) || 0;
@@ -180,51 +188,42 @@
                     <span class="text-lg text-amber-400 mt-2">(${result} ${modifier >= 0 ? '+' : ''} ${modifier})</span>
                 </div>
             `;
+            
+            const skillName = skillSelect.value !== '0' ? skillSelect.options[skillSelect.selectedIndex].text : 'Manual';
+            const clipboardText = `Hasil Guliran d${sides}: ${result}\nModifier: ${modifier} (${skillName})\nTotal: ${finalResult}`;
+            
+            copyToClipboard(clipboardText);
         }
         
         // Initial setup on page load
         window.addEventListener('load', () => {
-            populateSkillDropdown();
-            // Service Worker registration for PWA
-            if ('serviceWorker' in navigator) {
-                const swScript = `
-                    const CACHE_NAME = 'dnd-dice-v1';
-                    const urlsToCache = [
-                        './'
-                    ];
-
-                    self.addEventListener('install', (event) => {
-                        event.waitUntil(
-                            caches.open(CACHE_NAME)
-                                .then((cache) => {
-                                    return cache.addAll(urlsToCache);
-                                })
-                        );
-                    });
-
-                    self.addEventListener('fetch', (event) => {
-                        event.respondWith(
-                            caches.match(event.request)
-                                .then((response) => {
-                                    if (response) {
-                                        return response;
-                                    }
-                                    return fetch(event.request);
-                                })
-                        );
-                    });
-                `;
-                const swBlob = new Blob([swScript], { type: 'text/javascript' });
-                const swUrl = URL.createObjectURL(swBlob);
-
-                navigator.serviceWorker.register(swUrl)
-                    .then(registration => {
-                        console.log('Service Worker terdaftar dengan sukses!', registration.scope);
-                    })
-                    .catch(error => {
-                        console.error('Pendaftaran Service Worker gagal:', error);
-                    });
+            const savedSkills = localStorage.getItem('dndSkills');
+            if (savedSkills) {
+                try {
+                    skillModifiers = JSON.parse(savedSkills);
+                    skillInput.value = JSON.stringify(skillModifiers, null, 4);
+                    skillFeedback.textContent = "Kode skill dimuat dari penyimpanan lokal.";
+                    skillFeedback.className = "text-center text-sm font-bold text-green-400 mt-2";
+                } catch (error) {
+                    localStorage.removeItem('dndSkills'); // Hapus data yang rusak
+                    skillFeedback.textContent = "Error: Data penyimpanan lokal rusak.";
+                    skillFeedback.className = "text-center text-sm font-bold text-red-500 mt-2";
+                }
+            } else {
+                const defaultSkills = {
+                    "strength": 2,
+                    "dexterity": 4,
+                    "constitution": 1,
+                    "intelligence": 0,
+                    "wisdom": 3,
+                    "charisma": 2,
+                    "perception": 3,
+                    "stealth": 4
+                };
+                skillModifiers = defaultSkills;
+                skillInput.value = JSON.stringify(defaultSkills, null, 4);
             }
+            populateSkillDropdown();
         });
     </script>
 </body>
