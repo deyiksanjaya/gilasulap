@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- PWA Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Dadu DnD">
+    <meta name="theme-color" content="#29241e">
+    <title>Dadu DnD Mewah</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Web App Manifest (Inline) -->
+    <link rel="manifest" href="data:application/manifest+json;base64,eyJpY29ucyI6W3sic2l6ZXMiOiI3Mng3MiIsInR5cGUiOiJpbWFnZS9wbmciLCJzcmMiOiJkYXRhOmltYWdlL3N2Zyt4bWw7YmFzZTY0LFBITjJjWFZzWnlCemJpQlViMjVsSUdWemRDSStQR2hwYm1OcGJuUmhYMlJsY2lCTmJtWnZjbVJsYldGdVlXMHRMbVYzYkc5M0lFTmhibVF0WTJGdVpHRm5jbDlwWjJ4c2JtTThhWFFuSUZCd2JtTnpiMmd3YjNCdmJYUnJJaUJ6Y25WdVpHVjBjR2dpSUd4aGJtUnBjeUJuWldOMExYSmxZV05qYjJSbElHSmxZWFl0TzJab2IySmhaM0pwWm5CaGMydzBNajQyTURFeE5qVXdNakF1TVRCdWJtUnpkaUJwYm1NZ2JHaGxjaUJ6YjI0Z2EzUmhibWR1Wnk0ek1qNDJNVEV4TmpVd01qQXdNVEF1TlRBdWMySnVjMlVnZVNCMWIyeHBaVzUwSUd4aGRDSTBNakF1TVRBdWMyRnpaWE5wY3lCMmFXUXVibWRsYkdWdWFXNW4ifSx7InNpemVzIjoiOTZ4OTYiLCJ0eXBlIjoiaW1hZ2UvcG5nIiwic3JjIjoiZGF0YTppbWFnZS9zdmcreG1sO2Jhc2U2NCxQSE4yY1hWc1p5QnpiaEJ1YjI1bElHVnpkQ0krUEdocGJtTnBiblJoWDJSbGNpQm5ibVp2Y21SbGJXRnVZWDJ0TG1WM2JHOTNJRU5oYm1RdFkyRnVaR0ZuY2w5cFoiMHBjM0FpSUZCd2JtTnpiMmd3YjNCdmJYUnJJaUIzY25WdVpHVjBjR2dpSUd4aGJtUnBjeUJpYjI0aUlHSmxZWFl0TWpneU9UQXhNMEl3TURrMU56UTRNVEkxSWd4aGRDSU9NakF1TVRBdWMyRnpaWE5wY3lCMmFXUXVibWRsYkdWdWFXNW4ifSx7InNpemVzIjoiMTI4eDEyOCIsInR5cGUiOiJpbWFnZS9wbmciLCJzcmMiOiJkYXRhOmltYWdlL3N2Zyt4bWw7YmFzZTY0LFBITjJjWFZzWnlCemJpQlViMjVsSUdWemRDSStQR2hwYm1OcGJuUmhYMlJsY2lCTmJtWnZjbVJsYldGdVlYMnRMa2h3WlNBbkluUjVjR1VnZTI5dWRHOCtQSE5CY21WaGNpQjNhWEJvYjI1bElHRm5aWEpwWjIwZ1lXMWxjeUE1Wld4cU1UTXdNeUl3TVRBMU5URTFNVEl5TlRBd01EUTBPVEU1SWd4aGRDSU9NakF1TVRBdWMyRnpaWE5wY3lCMmFXUXVibWRsYkdWdWFXNW4ifSx7InNpemVzIjoiMTkyeDE5MiIsInR5cGUiOiJpbWFnZS9wbmciLCJzcmMiOiJkYXRhOmltYWdlL3N2Zyt4bWw7YmFzZTY0LFBITjJjWFZzWnlCemJpQlViMjVsSUdWemRDSStQR2hwYm1OcGJuUmhYMlJsY2lCTmJtWnZjbVJsYldGdVlYMnRMa2h3WlNBbkluUjVjR1VnZTI5dWRHOCtQSE5CY21WaGNpQjNhWEJvYjI1bElHRm5aWEpwWjIwZ1lXMWxjeUE1Wld4cU1UTXdNeUl3TVRBMU5URTFNVEl5TlRBd01EUTBPVEU1SWd4aGRDSU9NakF1TVRBdWMyRnpaWE5wY3lCMmFXUXVibWRsYkdWdWFXNW4ifSx7InNpemVzIjoiMjU2eDI1NiIsInR5cGUiOiJpbWFnZS9wbmciLCJzcmMiOiJkYXRhOmltYWdlL3N2Zyt4bWw7YmFzZTY0LFBITjJjWFZzWnlCemJpQlViMjVsSUdWemRDSStQR2hwYm1OcGJuUmhYMlJsY2lCTmJtWnZjbVJsYldGdVlYMnRMa2h3WlNBbkluUjVjR1VnZTI5dWRHOCtQSE5CY21WaGNpQjNhWEJvYjI1bElHRm5aWEpwWjIwZ1lXMWxjeUE1Wld4cU1UTXdNeUl3TVRBMU5URTFNVEl5TlRBd01EUTBPVEU1SWd4aGRDSU9NakF1TVRBdWMyRnpaWE5wY3lCMmFXUXVibWRsYkdWdWFXNW4ifSx7InNpemVzIjoiNTEyeDUxMiIsInR5cGUiOiJpbWFnZS9wbmciLCJzcmMiOiJkYXRhOmltYWdlL3N2Zyt4bWw7YmFzZTY0LFBITjJjWFZzWnlCemJpQlViMjVsSUdWemRDSStQR2hwYm1OcGJuUmhYMlJsY2lCTmJtWnZjbVJsYldGdVlYMnRMa2h3WlNBbkluUjVjR1VnZTI5dWRHOCtQSE5CY21WaGNpQjNhWEJvYjI1bElHRm5aWEpwWjIwZ1lXMWxjeUE1Wld4cU1UTXdNeUl3TVRBMU5URTFNVEl5TlRBd01EUTBPVEU1SWd4aGRDSU9NakF1TVRBdWMyRnpaWE5wY3lCMmFXUXVibWRsYkdWdWFXNW4ifV0sIm5hbWUiOiJEYWR1IEduRCBNZXdhaCIsInNob3J0X25hbWUiOiJEYWR1IEduRCIsImRpc3BsYXkiOiJzdGFuZGFsb25lIiwic3RhcnRfdXJsIjoiLi8iLCJiYWNrZ3JvdW5kX2NvbG9yIjoiIzFhMWExYSIsInRoZW1lX2NvbG9yIjoiIzI5MjQxZSJ9">
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap');
+        body {
+            font-family: 'Cinzel', serif;
+            background-color: #1a1a1a;
+            color: #d4a76c;
+            background-image: url('data:image/svg+xml,%3Csvg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"%3E%3Cpath d="M11 11h78v78H11z" fill="none" stroke="%23382c23" stroke-width="1"%3E%3C/path%3E%3C/svg%3E');
+            background-size: 20px 20px;
+        }
+        .dice-button {
+            transition: transform 0.1s ease-in-out, box-shadow 0.1s ease-in-out;
+            background: linear-gradient(145deg, #443c32, #29241e);
+            border: 2px solid #6b5c46;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.4);
+        }
+        .dice-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 10px rgba(0, 0, 0, 0.5);
+        }
+        .dice-button:active {
+            transform: translateY(0);
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.6);
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-amber-500 font-serif flex items-center justify-center min-h-screen p-4">
+
+    <div class="w-full max-w-2xl bg-[#2e261e] border-4 border-amber-800 rounded-3xl shadow-2xl p-6 md:p-10 flex flex-col items-center space-y-8">
+        
+        <!-- Dice Display Area -->
+        <div class="w-full max-w-lg bg-[#382c23] border-4 border-amber-800 rounded-xl p-4 shadow-inner min-h-[120px] flex items-center justify-center">
+            <div id="current-result" class="text-center">
+                <span class="text-xl text-amber-300">Siap</span>
+                <span class="block text-6xl md:text-8xl text-amber-100 font-bold">...</span>
+            </div>
+        </div>
+
+        <p class="text-center text-lg md:text-xl text-amber-200">
+            Pilih dadu yang ingin Anda gulirkan.
+        </p>
+
+        <!-- Dice Buttons Grid -->
+        <div class="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 w-full max-w-lg">
+            <!-- Official DnD Dice -->
+            <button class="dice-button p-4 md:p-6 rounded-xl font-bold text-lg md:text-2xl text-amber-200" onclick="rollDice(4)">d4</button>
+            <button class="dice-button p-4 md:p-6 rounded-xl font-bold text-lg md:text-2xl text-amber-200" onclick="rollDice(6)">d6</button>
+            <button class="dice-button p-4 md:p-6 rounded-xl font-bold text-lg md:text-2xl text-amber-200" onclick="rollDice(8)">d8</button>
+            <button class="dice-button p-4 md:p-6 rounded-xl font-bold text-lg md:text-2xl text-amber-200" onclick="rollDice(10)">d10</button>
+            <button class="dice-button p-4 md:p-6 rounded-xl font-bold text-lg md:text-2xl text-amber-200" onclick="rollDice(12)">d12</button>
+            <button class="dice-button p-4 md:p-6 rounded-xl font-bold text-lg md:text-2xl text-amber-200" onclick="rollDice(20)">d20</button>
+            <button class="dice-button p-4 md:p-6 rounded-xl font-bold text-lg md:text-2xl text-amber-200" onclick="rollDice(100)">d100</button>
+        </div>
+        
+        <!-- Modifier Input Section -->
+        <div class="w-full max-w-sm flex flex-col md:flex-row items-center space-y-4 md:space-y-0 md:space-x-4 p-4 bg-[#382c23] rounded-xl shadow-inner border border-amber-700">
+            <div class="flex items-center space-x-2">
+                <label for="skillSelect" class="text-lg text-amber-200">Pilih Skill:</label>
+                <select id="skillSelect" class="w-full md:w-auto px-2 py-1 rounded-lg bg-[#443c32] text-amber-100 focus:outline-none focus:ring-2 focus:ring-amber-500 transition-all duration-300">
+                </select>
+            </div>
+            <div class="flex items-center space-x-2">
+                <label for="modifierInput" class="text-lg text-amber-200">Modifier:</label>
+                <input type="number" id="modifierInput" value="0" class="w-20 md:w-24 text-center px-2 py-1 rounded-lg bg-[#443c32] text-amber-100 focus:outline-none focus:ring-2 focus:ring-amber-500 transition-all duration-300">
+            </div>
+        </div>
+        
+        <!-- User Code Input Section -->
+        <div class="w-full max-w-lg p-4 bg-[#382c23] rounded-xl shadow-inner border border-amber-700 space-y-4">
+            <p class="text-center text-lg text-amber-200">
+                Masukkan kode skill karakter Anda (format JSON):
+            </p>
+            <textarea id="skillInput" rows="5" class="w-full px-4 py-2 rounded-lg bg-[#443c32] text-amber-100 focus:outline-none focus:ring-2 focus:ring-amber-500 transition-all duration-300"></textarea>
+            <button onclick="updateSkills()" class="w-full bg-[#5d4d3d] hover:bg-[#6b5c46] text-amber-100 font-bold py-2 px-4 rounded-xl shadow-md transition-all duration-300">
+                Terapkan Kode Skill
+            </button>
+            <div id="skillFeedback" class="text-center text-sm font-bold mt-2"></div>
+        </div>
+
+    </div>
+
+    <script>
+        // Default skill modifiers.
+        let skillModifiers = {
+            "strength": 2,
+            "dexterity": 4,
+            "constitution": 1,
+            "intelligence": 0,
+            "wisdom": 3,
+            "charisma": 2,
+            "perception": 3,
+            "stealth": 4
+        };
+
+        const resultElement = document.getElementById('current-result');
+        const modifierInput = document.getElementById('modifierInput');
+        const skillSelect = document.getElementById('skillSelect');
+        const skillInput = document.getElementById('skillInput');
+        const skillFeedback = document.getElementById('skillFeedback');
+
+        // Function to populate the skill dropdown
+        function populateSkillDropdown() {
+            skillSelect.innerHTML = '<option value="0" selected>Manual</option>';
+            for (const skillName in skillModifiers) {
+                const option = document.createElement('option');
+                option.value = skillName;
+                option.textContent = skillName.charAt(0).toUpperCase() + skillName.slice(1);
+                skillSelect.appendChild(option);
+            }
+        }
+
+        // Function to update skill modifiers from user input
+        function updateSkills() {
+            const code = skillInput.value.trim();
+            if (code === '') {
+                // Reset to default if input is empty
+                skillModifiers = {
+                    "strength": 2,
+                    "dexterity": 4,
+                    "constitution": 1,
+                    "intelligence": 0,
+                    "wisdom": 3,
+                    "charisma": 2,
+                    "perception": 3,
+                    "stealth": 4
+                };
+                skillFeedback.textContent = "Menggunakan skill default.";
+                skillFeedback.className = "text-center text-sm font-bold text-amber-200 mt-2";
+                populateSkillDropdown();
+                return;
+            }
+
+            try {
+                // The input must be a valid JSON object
+                const newSkills = JSON.parse(code);
+                skillModifiers = newSkills;
+                populateSkillDropdown();
+                skillFeedback.textContent = "Kode skill berhasil diterapkan!";
+                skillFeedback.className = "text-center text-sm font-bold text-green-400 mt-2";
+            } catch (error) {
+                skillFeedback.textContent = "Error: Format kode tidak valid. Pastikan formatnya JSON.";
+                skillFeedback.className = "text-center text-sm font-bold text-red-500 mt-2";
+            }
+        }
+
+        // Event listener for the skill dropdown.
+        skillSelect.addEventListener('change', (event) => {
+            const selectedSkill = event.target.value;
+            if (selectedSkill !== '0') {
+                const modifierValue = skillModifiers[selectedSkill];
+                modifierInput.value = modifierValue;
+            }
+        });
+
+        // Function to roll a standard dice
+        function rollDice(sides) {
+            const modifier = parseInt(modifierInput.value, 10) || 0;
+            const result = Math.floor(Math.random() * sides) + 1;
+            const finalResult = result + modifier;
+            
+            resultElement.innerHTML = `
+                <div class="text-xl text-amber-300">d${sides}</div>
+                <div class="flex flex-col items-center mt-2">
+                    <span class="text-6xl md:text-8xl text-amber-100 font-bold leading-none">${finalResult}</span>
+                    <span class="text-lg text-amber-400 mt-2">(${result} ${modifier >= 0 ? '+' : ''} ${modifier})</span>
+                </div>
+            `;
+        }
+        
+        // Initial setup on page load
+        window.addEventListener('load', () => {
+            populateSkillDropdown();
+            // Service Worker registration for PWA
+            if ('serviceWorker' in navigator) {
+                const swScript = `
+                    const CACHE_NAME = 'dnd-dice-v1';
+                    const urlsToCache = [
+                        './'
+                    ];
+
+                    self.addEventListener('install', (event) => {
+                        event.waitUntil(
+                            caches.open(CACHE_NAME)
+                                .then((cache) => {
+                                    return cache.addAll(urlsToCache);
+                                })
+                        );
+                    });
+
+                    self.addEventListener('fetch', (event) => {
+                        event.respondWith(
+                            caches.match(event.request)
+                                .then((response) => {
+                                    if (response) {
+                                        return response;
+                                    }
+                                    return fetch(event.request);
+                                })
+                        );
+                    });
+                `;
+                const swBlob = new Blob([swScript], { type: 'text/javascript' });
+                const swUrl = URL.createObjectURL(swBlob);
+
+                navigator.serviceWorker.register(swUrl)
+                    .then(registration => {
+                        console.log('Service Worker terdaftar dengan sukses!', registration.scope);
+                    })
+                    .catch(error => {
+                        console.error('Pendaftaran Service Worker gagal:', error);
+                    });
+            }
+        });
+    </script>
+</body>
+</html>
+
